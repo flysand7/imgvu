@@ -205,19 +205,9 @@ internal t_string16 win32_full_filepath_from_args(LPWSTR commandLine) {
   return(result);
 }
 
-// TODO(bumbread): cross platform to_lowercase
-internal void win32_path_prettify(t_string16 filePath) {
-  for(u32 i = 0; i < filePath.len; i += 1){
-    if(filePath.ptr[i] >= 'A' && filePath.ptr[i] <= 'Z') {
-      filePath.ptr[i] += 'a' - 'A';
-    }
-  }
-}
-
 // NOTE(bumbread): Platform layer function realisations
 internal t_string16 get_file_extension(t_string16 anyName);
 internal t_string16 get_short_filename(t_string16 relativeName);
-
 
 int wWinMain(HINSTANCE instance, HINSTANCE m_unused0, LPWSTR commandLine, int cmdShow) {
   
