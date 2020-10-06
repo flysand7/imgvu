@@ -10,6 +10,7 @@ struct {
 
 struct {
   u32 fileCount;
+  u32 maxFiles;
   t_file_entry* files;
   u32 fileIndex;
 } typedef t_directory_state;

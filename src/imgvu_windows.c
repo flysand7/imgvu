@@ -15,6 +15,8 @@
 #include<shellapi.h>
 #pragma warning(pop)
 
+#include<stdlib.h>
+
 struct {
   HWND handle;
   u32 clientWidth;
@@ -177,7 +179,7 @@ internal t_string16 win32_make_path_wildcard(t_string16 fullPath) {
   result.ptr[lastBackSlashPosition+1] = L'.';
   result.ptr[lastBackSlashPosition+2] = L'*';
   result.ptr[lastBackSlashPosition+3] = 0;
-  result.len = lastBackSlashPosition + 3;
+  result.len = (u32)(lastBackSlashPosition + 3);
   return(result);
 }
 
@@ -206,25 +208,80 @@ internal t_string16 win32_full_filepath_from_args(LPWSTR commandLine) {
 }
 
 // NOTE(bumbread): Platform layer function realisations
-internal t_string16 get_file_extension(t_string16 anyName);
+internal t_string16 get_file_extension(t_string16 name) {
+  u32 charIndex = name.len;
+  t_string16 result = {0};
+  loop {
+    if(name.ptr[charIndex] == L'.') {
+      u32 symbolsBeforeExtension = (charIndex+1);
+      result.ptr = name.ptr + symbolsBeforeExtension;
+      result.len = name.len - symbolsBeforeExtension;
+      return(result);
+    }
+    else if(name.ptr[charIndex] == L'\\') {
+      result.ptr = name.ptr + name.len;
+      result.len = 0;
+    }
+    if(charIndex == 0) break;
+    charIndex -= 1;
+  }
+  return(result);
+}
+
 internal t_string16 get_short_filename(t_string16 relativeName);
+
+internal void win32_add_file_entry(t_directory_state* directory, t_file_entry fileEntry) {
+  if(directory->fileCount + 1 > directory->maxFiles) {
+    directory->maxFiles *= 2;
+    if(!directory->maxFiles) directory->maxFiles = 1;
+    directory->files = (t_file_entry*)realloc(directory->files, directory->maxFiles * sizeof(t_file_entry));
+    assert(directory->files);
+  }
+  directory->files[directory->fileCount] = fileEntry;
+  directory->fileCount += 1;
+}
 
 int wWinMain(HINSTANCE instance, HINSTANCE m_unused0, LPWSTR commandLine, int cmdShow) {
   
   t_directory_state directoryState = {0};
-  // TODO(bumbread): make this function more robust, since 
-  // commandLine can be literally anything including being a directory
-  // in which case it can be counted as existing file.
   t_string16 fullFilepath = win32_full_filepath_from_args(commandLine);
-  if(fullFilepath.ptr) { 
-    // TODO(bumbread): make sure that the given path is not a file file?
-    t_string16 searchMask = win32_make_path_wildcard(fullFilepath);
-    // TODO(bumbread): search paths
+  // TODO(bumbread): test this more on invalid inputs
+  // so far this seems to be more-less robust function
+  assert(fullFilepath.ptr);
+  
+  // TODO(bumbread): check that search mask never has a trailing backslash
+  // this function fails on trailing backslashes
+  t_string16 searchMask = win32_make_path_wildcard(fullFilepath);
+  
+  WIN32_FIND_DATAW findData;
+  HANDLE searchHandle = FindFirstFileExW((LPWSTR)searchMask.ptr,
+                                         FindExInfoBasic,
+                                         &findData,
+                                         FindExSearchNameMatch, 
+                                         0, FIND_FIRST_EX_LARGE_FETCH|FIND_FIRST_EX_ON_DISK_ENTRIES_ONLY);
+  if(searchHandle == INVALID_HANDLE_VALUE) {
+    FindClose(searchHandle);
   }
   else {
-    // TODO(bumbread): signify uesr of invalid path
-    return(1);
+    loop {
+      
+      char16* filename = (char16*)findData.cFileName;
+      bool isDirectory = findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+      if(!isDirectory) {
+        t_file_entry fileEntry;
+        fileEntry.filename = win32_char16_to_string16(filename);
+        fileEntry.extension = get_file_extension(fileEntry.filename);
+        // TODO(bumbread): presume a certain sorting pattern 
+        // and add inside a sorted array.
+        win32_add_file_entry(&directoryState, fileEntry);
+      }
+      
+      bool nextFileFound = FindNextFileW(searchHandle, &findData);
+      if(!nextFileFound) break;
+    }
   }
+  
+  // TODO(bumbread): look if the file directory gets changed on a separate thread.
   
   WNDCLASSEXW windowClass = {
     .cbSize = sizeof(WNDCLASSEXW),
