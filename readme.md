@@ -8,10 +8,10 @@ this is a small educational project which I started for two reasons.
 * I'm fucking tired of windows' image viewer being black screen for several seconds and then turns out that you actually need to restart it, and even then it loads several seconds.
 
 ## notice:
-by *fast* I mean that a user doesn't get noticeable delay when using the program.
-by *reliable* I mean that if a certain kind of unexpected input is met, the program will be able to handle it smoothly. No crashes. No error messages (too far?? maybe i should print a warning line just in case..). 
-by *cross platform* I mean that this program is ready to be ported to any other platform if someone dares to write a platform layer for another OS.
+* by *fast* I mean that a user doesn't get noticeable delay when using the program.
+* by *reliable* I mean that if a certain kind of unexpected input is met, the program will be able to handle it smoothly. No crashes. No error messages (too far?? maybe i should print a warning line just in case..). 
+* by *cross platform* I mean that this program is ready to be ported to any other platform if someone dares to write a platform layer for another OS.
 
 ## about creator
-contact email: thebumboni@gmail.com
-discord:       bumbread#1977 (ynot?)
+* contact email: thebumboni@gmail.com
+* discord:       bumbread#1977 (ynot?)
