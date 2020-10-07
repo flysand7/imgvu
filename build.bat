@@ -15,7 +15,7 @@ REM ================
 REM PROJECT SETTINGS
 REM ================
 
-set defines=-D_CRT_SECURE_NO_WARNINGS -D_UNICODE
+set defines=-D_CRT_SECURE_NO_WARNINGS -D_UNICODE -D_NATIVE_WCHAR_T_DEFINED
 set output_file_name=imgvu
 set mode=%debug%
 set platform=%windows%
