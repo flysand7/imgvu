@@ -132,37 +132,7 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
   return(0);
 }
 
-internal t_string16  win32_widestring_to_string16(LPWSTR wide) {
-  char16* stringPointer = (char16*)wide;
-  u32 length = 0;
-  loop {
-    if(*stringPointer == 0x0000) break;
-    stringPointer += 1;
-    length = 0;
-  }
-  t_string16 result;
-  result.len = length;
-  result.ptr = stringPointer;
-  return(result);
-}
-
-internal t_string16 win32_char16_to_string16(char16* chars) {
-  u32 length = 0;
-  char16* charPointer = chars;
-  loop {
-    if(*charPointer == 0) {
-      break;
-    }
-    length += 1;
-    charPointer += 1;
-  }
-  t_string16 result;
-  result.len = length;
-  result.ptr = chars;
-  return(result);
-}
-
-internal t_string16 win32_make_path_wildcard(t_string16 fullPath) {
+internal t_string16 win32_make_path_wildcard_mem(t_string16 fullPath) {
   t_string16 result;
   result.len = fullPath.len;
   result.ptr = (char16*)malloc((result.len+1) * sizeof(char16));

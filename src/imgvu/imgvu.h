@@ -23,8 +23,6 @@ double typedef r64;
 u8 typedef byte;
 u16 typedef word;
 wchar_t typedef char16;
-struct { u32 len; char16* ptr; } typedef t_string16;
-struct { u32 len; char* ptr; } typedef t_string;
 
 #define internal static
 #define global static
@@ -33,6 +31,23 @@ struct { u32 len; char* ptr; } typedef t_string;
 
 #define assert(x) do { if(!(x)) { __debugbreak(); } } while(0)
 #define array_length(a) (sizeof(a) / sizeof((a)[0]))
+
+struct { u32 len; char16* ptr; } typedef t_string16;
+struct { u32 len; char* ptr; } typedef t_string;
+
+internal t_string16 char16_to_string16(char16* chars) {
+  char16* charPointer = chars;
+  u32 length = 0;
+  loop {
+    if(*charPointer == 0) break; 
+    length += 1;
+    charPointer += 1;
+  }
+  t_string16 result;
+  result.len = length;
+  result.ptr = chars;
+  return(result);
+}
 
 #include"input.h"
 
