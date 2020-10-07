@@ -153,32 +153,25 @@ internal t_string16 win32_make_path_wildcard_mem(t_string16 fullPath) {
   return(result);
 }
 
-internal t_string16 win32_full_filepath_from_args(LPWSTR commandLine) {
-  t_string16 result = {0};
-  int argCount = 0;
-  LPWSTR* args = CommandLineToArgvW(commandLine, &argCount);
-  if(args) {
-    if(argCount >= 1) {
-      LPWSTR filePath = args[0];
-      // NOTE(bumbread): running the command with empty buffer to get the receive length
-      u32 receiveLength = (u32)GetFullPathNameW(filePath, 0, 0, 0);
-      if(receiveLength == 0) {
-        return(result);
-      }
-      // NOTE(bumbread): reveiving the actual full path
-      char16* fullName = (char16*)malloc(receiveLength * sizeof(char16));
-      GetFullPathNameW(filePath, receiveLength, fullName, 0);
-      fullName[receiveLength] = 0;
-      // NOTE(bumbread): returning
-      result.len = receiveLength - 1;
-      result.ptr = fullName;
-    }
+internal t_string16 win32_get_full_filepath_mem(t_string16 name) {
+  t_string16 result;
+  // NOTE(bumbread): running the command with empty buffer to get the receive length
+  u32 receiveLength = (u32)GetFullPathNameW((LPCWSTR)name.ptr, 0, 0, 0);
+  if(receiveLength == 0) {
+    result.len = 0;
+    result.ptr = 0;
+    return(result);
   }
+  // NOTE(bumbread): reveiving the actual full path
+  char16* fullName = (char16*)malloc(receiveLength * sizeof(char16));
+  GetFullPathNameW((LPCWSTR)name.ptr, receiveLength, fullName, 0);
+  fullName[receiveLength] = 0;
+  result.len = receiveLength;
+  result.ptr = fullName;
   return(result);
 }
 
-// NOTE(bumbread): Platform layer function realisations
-internal t_string16 get_file_extension(t_string16 name) {
+internal t_string16 win32_get_file_extension(t_string16 name) {
   u32 charIndex = name.len;
   t_string16 result = {0};
   loop {
@@ -198,8 +191,43 @@ internal t_string16 get_file_extension(t_string16 name) {
   return(result);
 }
 
-internal t_string16 get_short_filename(t_string16 relativeName);
+//internal t_string16 win32_get_short_filename(t_string16 relativeName);
 
+internal t_string16 win32_argstring_get_full_path(LPWSTR commandLine) {
+  t_string16 result = {0};
+  int argCount = 0;
+  LPWSTR* args = CommandLineToArgvW(commandLine, &argCount);
+  if(args) {
+    if(argCount >= 1) {
+      LPWSTR filePath = args[1];
+      t_string16 filepathString = char16_to_string16((char16*)filePath);
+      t_string16 fullPath = win32_get_full_filepath_mem(filepathString);
+      return(fullPath);
+    }
+  }
+  return(result);
+}
+
+internal t_string16 win32_get_path_mem(t_string16 fullPath) {
+  t_string16 result;
+  result.ptr = (char16*)malloc(fullPath.len);
+  for(u32 charIndex = 0; charIndex < fullPath.len; charIndex += 1) {
+    result.ptr[charIndex] = fullPath.ptr[charIndex];
+  }
+  // TODO(bumbread): feels janky, check one more time
+  for(u32 charIndex = fullPath.len-1;;charIndex -= 1) {
+    if(result.ptr[charIndex] == L'\\') {
+      result.ptr[charIndex] = 0;
+      result.len = charIndex;
+      break;
+    }
+    if(charIndex == 0) break;
+  }
+  return(result);
+}
+
+// TODO(bumbread): presume a certain sorting pattern 
+// and add inside a sorted array.
 internal void win32_add_file_entry(t_directory_state* directory, t_file_entry fileEntry) {
   if(directory->fileCount + 1 > directory->maxFiles) {
     directory->maxFiles *= 2;
@@ -211,20 +239,33 @@ internal void win32_add_file_entry(t_directory_state* directory, t_file_entry fi
   directory->fileCount += 1;
 }
 
-int wWinMain(HINSTANCE instance, HINSTANCE m_unused0, LPWSTR commandLine, int cmdShow) {
+
+#include<stdio.h>
+#define use_windows_main 0
+
+#if(use_windows_main != 0)
+int wWinMain(HINSTANCE instance, HINSTANCE m_unused0, LPWSTR commandLine, int cmdShow) 
+#else
+int main(void)
+#endif
+{
+#if(use_windows_main == 0)
+  LPWSTR commandLine = GetCommandLineW();
+  HINSTANCE instance = GetModuleHandle(0);
+#endif
   
+  // TODO(bumbread): See what happens if i input \\?\... in command line
   t_directory_state directoryState = {0};
-  t_string16 fullFilepath = win32_full_filepath_from_args(commandLine);
+  t_string16 baseFilename = win32_argstring_get_full_path(commandLine);
   // TODO(bumbread): test this more on invalid inputs
   // so far this seems to be more-less robust function
-  assert(fullFilepath.ptr);
+  assert(baseFilename.ptr);
   
   // TODO(bumbread): check that search mask never has a trailing backslash
   // this function fails on trailing backslashes
-  t_string16 searchMask = win32_make_path_wildcard(fullFilepath);
-  
+  t_string16 searchPath = win32_make_path_wildcard_mem(baseFilename);
   WIN32_FIND_DATAW findData;
-  HANDLE searchHandle = FindFirstFileExW((LPWSTR)searchMask.ptr,
+  HANDLE searchHandle = FindFirstFileExW((LPWSTR)searchPath.ptr,
                                          FindExInfoBasic,
                                          &findData,
                                          FindExSearchNameMatch, 
@@ -234,15 +275,13 @@ int wWinMain(HINSTANCE instance, HINSTANCE m_unused0, LPWSTR commandLine, int cm
   }
   else {
     loop {
-      
-      char16* filename = (char16*)findData.cFileName;
+      t_string16 filename = char16_to_string16((char16*)findData.cFileName);
+      t_string16 fullPath = win32_get_full_filepath_mem(filename);
       bool isDirectory = findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
       if(!isDirectory) {
         t_file_entry fileEntry;
-        fileEntry.filename = win32_char16_to_string16(filename);
-        fileEntry.extension = get_file_extension(fileEntry.filename);
-        // TODO(bumbread): presume a certain sorting pattern 
-        // and add inside a sorted array.
+        fileEntry.filename = fullPath;
+        fileEntry.extension = win32_get_file_extension(fullPath);
         win32_add_file_entry(&directoryState, fileEntry);
       }
       
@@ -250,8 +289,91 @@ int wWinMain(HINSTANCE instance, HINSTANCE m_unused0, LPWSTR commandLine, int cm
       if(!nextFileFound) break;
     }
   }
+  free(searchPath.ptr);
   
-  // TODO(bumbread): look if the file directory gets changed on a separate thread.
+  t_string16 filePath = win32_get_path_mem(baseFilename);
+  // TODO(bumbread): is this guaranteed to be the case???
+  //char16 driveLetter = filePath.ptr[0];
+  //char16 drive[4] = {driveLetter, L':', L'\\'};
+  
+  HANDLE dirHandle = CreateFileW((LPCWSTR)filePath.ptr, GENERIC_READ, 
+                                 FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+                                 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+  DWORD lastError = GetLastError();
+  assert(dirHandle != INVALID_HANDLE_VALUE);
+  byte* infos = (byte*)calloc(1024, 1);
+  
+  {
+    loop {
+      byte* infoPointer = infos;
+      DWORD bytesReturned = 0;
+      
+      // TODO(bumbread): separate check to whether the name
+      // of the watched directory had changed.
+      wprintf(L"waiting for the next dir change...\n");
+      bool result = ReadDirectoryChangesW(dirHandle, infos, 1024,
+                                          false, FILE_NOTIFY_CHANGE_FILE_NAME
+                                          | FILE_NOTIFY_CHANGE_SIZE
+                                          | FILE_NOTIFY_CHANGE_LAST_WRITE
+                                          | FILE_NOTIFY_CHANGE_LAST_ACCESS
+                                          |FILE_NOTIFY_CHANGE_CREATION,
+                                          &bytesReturned, 0, 0);
+      // TODO(bumbread): make sure this code doesn't crash 
+      // because the buffer was too short
+      assert(result);
+      // NOTE(bumbread): this line of code is only to disable compiler warnings
+      // while testing
+      if(result == 0) break; 
+      struct _FILE_NOTIFY_INFORMATION* fileInfo = (struct _FILE_NOTIFY_INFORMATION*)infoPointer;
+      
+      t_string16 filename;
+      u32 stringLength = fileInfo->FileNameLength/sizeof(char16);
+      filename.len = stringLength;
+      filename.ptr = (char16*)fileInfo->FileName;
+      filename.ptr[filename.len] = 0;
+      
+      switch(fileInfo->Action) {
+        case(FILE_ACTION_ADDED): {
+          wprintf(L"file %ls got added\n", filename.ptr);
+          t_string16 fullName = win32_get_full_filepath_mem(filename);
+          t_file_entry fileEntry;
+          fileEntry.filename = fullName;
+          fileEntry.extension = win32_get_file_extension(fullName);
+          win32_add_file_entry(&directoryState, fileEntry);
+        } break;
+        case(FILE_ACTION_REMOVED): {
+          wprintf(L"file %ls got removed\n", filename.ptr);
+        } break;
+        case(FILE_ACTION_MODIFIED): {
+          wprintf(L"file %ls got modified\n", filename.ptr);
+          
+        } break;
+        case(FILE_ACTION_RENAMED_OLD_NAME): {
+          
+          assert(fileInfo->NextEntryOffset != 0);
+          infoPointer += fileInfo->NextEntryOffset;
+          
+          fileInfo = (struct _FILE_NOTIFY_INFORMATION*)infoPointer;
+          assert(fileInfo->Action == FILE_ACTION_RENAMED_NEW_NAME);
+          
+          t_string16 newFilename;
+          u32 newStringLength = fileInfo->FileNameLength/sizeof(char16);
+          newFilename.len = newStringLength;
+          newFilename.ptr = (char16*)fileInfo->FileName;
+          newFilename.ptr[newFilename.len] = 0;
+          
+          wprintf(L"renamed from %ls to %ls\n", filename.ptr, newFilename.ptr);
+        } break;
+      }
+    }
+    
+  }
+  
+  CloseHandle(dirHandle);
+  wprintf(L"broke out!\n");
+  
+  free(infos);
+  free(filePath.ptr);
   
   WNDCLASSEXW windowClass = {
     .cbSize = sizeof(WNDCLASSEXW),
