@@ -21,7 +21,7 @@ set mode=%debug%
 set platform=%windows%
 set input_file_name=imgvu_windows.c
 set compiler=clang
-set lnk_libs=kernel32.lib user32.lib gdi32.lib shell32.lib
+set lnk_libs=kernel32.lib user32.lib gdi32.lib shell32.lib shlwapi.lib
 
 REM =================
 REM COMPILATION SETUP

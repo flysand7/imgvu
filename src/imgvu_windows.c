@@ -14,7 +14,8 @@
 // SORTPP_PASS
 #define SORTPP_PASS
 #include<Windows.h>
-#include<shellapi.h>
+//#include<shellapi.h>
+#include<Shlwapi.h> // PathFileExistsW
 #pragma warning(pop)
 
 #include<stdlib.h>
@@ -243,7 +244,7 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
 internal t_string16 win32_make_path_wildcard_mem(t_string16 fullPath) {
   t_string16 result;
   result.len = fullPath.len;
-  result.ptr = (char16*)malloc((result.len+1) * sizeof(char16));
+  result.ptr = (char16*)malloc((result.len+4) * sizeof(char16));
   i32 lastBackSlashPosition = -1;
   for(u32 charIndex = 0; charIndex < result.len; charIndex += 1) {
     char16 nextChar = fullPath.ptr[charIndex];
@@ -274,7 +275,7 @@ internal t_string16 win32_get_full_filepath_mem(t_string16 name) {
   char16* fullName = (char16*)malloc(receiveLength * sizeof(char16));
   GetFullPathNameW((LPCWSTR)name.ptr, receiveLength, fullName, 0);
   fullName[receiveLength] = 0;
-  result.len = receiveLength;
+  result.len = receiveLength-1;
   result.ptr = fullName;
   return(result);
 }
@@ -306,12 +307,17 @@ internal t_string16 win32_argstring_get_full_path(LPWSTR commandLine) {
   int argCount = 0;
   LPWSTR* args = CommandLineToArgvW(commandLine, &argCount);
   if(args) {
-    if(argCount >= 1) {
-      LPWSTR filePath = args[1];
-      t_string16 filepathString = char16_to_string16((char16*)filePath);
-      t_string16 fullPath = win32_get_full_filepath_mem(filepathString);
-      return(fullPath);
+    LPWSTR filePath = 0;
+    if(argCount > 1) {
+      filePath = args[1];
     }
+    else if(argCount == 1) {
+      filePath = args[0];
+    }
+    assert(filePath != 0);
+    t_string16 filepathString = char16_to_string16((char16*)filePath);
+    t_string16 fullPath = win32_get_full_filepath_mem(filepathString);
+    return(fullPath);
   }
   return(result);
 }
@@ -319,17 +325,20 @@ internal t_string16 win32_argstring_get_full_path(LPWSTR commandLine) {
 internal t_string16 win32_get_path_mem(t_string16 fullPath) {
   t_string16 result;
   result.ptr = (char16*)malloc(fullPath.len);
+  // NOTE(bumbread): copying string to result buffer
   for(u32 charIndex = 0; charIndex < fullPath.len; charIndex += 1) {
     result.ptr[charIndex] = fullPath.ptr[charIndex];
   }
-  // TODO(bumbread): feels janky, check one more time
-  for(u32 charIndex = fullPath.len-1;;charIndex -= 1) {
+  // NOTE(bumbread): removing trailing backslash
+  u32 charIndex = fullPath.len - 1;
+  loop {
     if(result.ptr[charIndex] == L'\\') {
       result.ptr[charIndex] = 0;
       result.len = charIndex;
       break;
     }
     if(charIndex == 0) break;
+    charIndex -= 1;
   }
   return(result);
 }
@@ -364,13 +373,19 @@ int main(void)
   t_directory_state directoryState = {0};
   t_string16 baseFilename = win32_argstring_get_full_path(commandLine);
   // TODO(bumbread): test this more on invalid inputs
-  // so far this seems to be more-less robust function
-  // TODO(bumbread): this program crashes on baseFilename.ptr == 0
-  // when commandLine doesn't have the second argument
-  assert(baseFilename.ptr);
   
   // TODO(bumbread): check that search mask never has a trailing backslash
   // this function fails on trailing backslashes
+  bool isPathValid = PathFileExistsW(baseFilename.ptr);
+  if(!isPathValid) {
+    // TODO(bumbread): possible to handle this case separately by, for example waiting
+    // for the empty directory to be created.
+    // this also opens up a lot of possibilities for handling the filenames from 
+    // the dir listening thread, since if i listen to the directories
+    // starting from the drive root, i don't have to worry about
+    // target filepath existing.
+    debug_variable_unused(isPathValid);
+  }
   t_string16 searchPath = win32_make_path_wildcard_mem(baseFilename);
   
   WIN32_FIND_DATAW findData;
