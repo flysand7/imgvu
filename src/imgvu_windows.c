@@ -3,6 +3,8 @@
 #include"imgvu/main.c"
 #include"imgvu/platform.h"
 
+#define debug_variable_unused(lvalue_) do{{void* tmp=&(lvalue_);tmp = 0;}}while(0)
+
 // NOTE(bumbread): Windows.h produces shit ton of 
 // warnings starting /W4. I'm disabling them
 #pragma warning(push, 1)
