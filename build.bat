@@ -29,7 +29,7 @@ REM =================
 
 REM WARNINGS
 set msvc_dwarnings=-wd4100 -wd4710 -wd5045 -wd4068 -wd4201 -wd4221 -wd4127
-set clang_dwarnings=-Wno-unused-parameter -Wno-unused-function -Wno-unused-macros
+set clang_dwarnings=-Wno-unused-parameter -Wno-unused-function -Wno-unused-macros -Wno-cast-align
 
 REM COMPILATION FLAGS
 set common_flags=%mode% %defines% -nologo -FC -Wall -WX -TC -Ob1 -Oi -EHa -c -Zp4

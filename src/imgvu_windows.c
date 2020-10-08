@@ -41,90 +41,89 @@ struct {
   t_string16 filePath;
 } typedef t_directory_updates;
 
+// TODO(bumbread): rewrite this so that it handles all updates from the root of the
+// disk up to the target directory, and only select the updates that directly touch 
+// any directory above the target folder, target folder itself or the subdirectory
+// of the target folder
 internal DWORD WINAPI directories_listen_proc(t_directory_updates* updates) {
   HANDLE dirHandle = CreateFileW((LPCWSTR)updates->filePath.ptr, GENERIC_READ, 
                                  FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
                                  0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
-  DWORD lastError = GetLastError();
   assert(dirHandle != INVALID_HANDLE_VALUE);
-  // TODO(bumbread): this should be on the stack
-  byte* infos = (byte*)calloc(1024, 1);
-  
-  {
-    loop {
-      byte* infoPointer = infos;
-      DWORD bytesReturned = 0;
-      
-      // TODO(bumbread): separate check to whether the name
-      // of the watched directory had changed.
-      wprintf(L"waiting for the next dir change...\n");
-      bool result = ReadDirectoryChangesW(dirHandle, infos, 1024,
-                                          false, FILE_NOTIFY_CHANGE_FILE_NAME
-                                          | FILE_NOTIFY_CHANGE_SIZE
-                                          | FILE_NOTIFY_CHANGE_LAST_WRITE
-                                          | FILE_NOTIFY_CHANGE_LAST_ACCESS
-                                          |FILE_NOTIFY_CHANGE_CREATION,
-                                          &bytesReturned, 0, 0);
-      // TODO(bumbread): make sure this code doesn't crash 
-      // because the buffer was too short
-      assert(result);
-      struct _FILE_NOTIFY_INFORMATION* fileInfo = (struct _FILE_NOTIFY_INFORMATION*)infoPointer;
-      
-      t_string16 filename;
-      u32 stringLength = fileInfo->FileNameLength/sizeof(char16);
-      filename.len = stringLength;
-      filename.ptr = (char16*)fileInfo->FileName;
-      filename.ptr[filename.len] = 0;
-      
-      switch(fileInfo->Action) {
-        case(FILE_ACTION_ADDED): {
-          wprintf(L"file %ls got added\n", filename.ptr);
+  byte infos[1024] = {0};
+  loop {
+    byte* infoPointer = infos;
+    DWORD bytesReturned = 0;
+    
+    // TODO(bumbread): separate check to whether the name
+    // of the watched directory had changed.
+    wprintf(L"waiting for the next dir change...\n");
+    // TODO(bumbread): check if the function below works in other
+    // commonly used filesystems.
+    bool result = ReadDirectoryChangesW(dirHandle, infos, 1024,
+                                        false, FILE_NOTIFY_CHANGE_FILE_NAME
+                                        | FILE_NOTIFY_CHANGE_SIZE
+                                        | FILE_NOTIFY_CHANGE_LAST_WRITE
+                                        | FILE_NOTIFY_CHANGE_LAST_ACCESS
+                                        |FILE_NOTIFY_CHANGE_CREATION,
+                                        &bytesReturned, 0, 0);
+    // TODO(bumbread): make sure this code doesn't crash 
+    // because the buffer was too short
+    assert(result);
+    struct _FILE_NOTIFY_INFORMATION* fileInfo = (struct _FILE_NOTIFY_INFORMATION*)infoPointer;
+    
+    t_string16 filename;
+    u32 stringLength = fileInfo->FileNameLength/sizeof(char16);
+    filename.len = stringLength;
+    filename.ptr = (char16*)fileInfo->FileName;
+    filename.ptr[filename.len] = 0;
+    
+    switch(fileInfo->Action) {
+      case(FILE_ACTION_ADDED): {
+        wprintf(L"file %ls got added\n", filename.ptr);
 #if 0
-          // NOTE(bumbread): code in this block shouldn't be in here for now
-          {
-            t_string16 fullName = win32_get_full_filepath_mem(filename);
-            t_file_entry fileEntry;
-            fileEntry.filename = fullName;
-            fileEntry.extension = win32_get_file_extension(fullName);
-            win32_add_file_entry(&directoryState, fileEntry);
-          }
+        // NOTE(bumbread): code in this block shouldn't be in here for now
+        {
+          t_string16 fullName = win32_get_full_filepath_mem(filename);
+          t_file_entry fileEntry;
+          fileEntry.filename = fullName;
+          fileEntry.extension = win32_get_file_extension(fullName);
+          win32_add_file_entry(&directoryState, fileEntry);
+        }
 #endif
-        } break;
-        case(FILE_ACTION_REMOVED): {
-          wprintf(L"file %ls got removed\n", filename.ptr);
-        } break;
-        case(FILE_ACTION_MODIFIED): {
-          wprintf(L"file %ls got modified\n", filename.ptr);
-          
-        } break;
-        case(FILE_ACTION_RENAMED_OLD_NAME): {
-          
-          // TODO(bumbread): check if this behaviour is documented
-          // but winapi seems to be reliably sendind NEW_NAME after OLD_NAME
-          // TODO(bumbread): in case winapi decides to insert another notify information in between these two
-          // i should _actually_ write this in a loop leaving the information about
-          // the old name and writing to a flag, and clearing that flag using the name,
-          // every time NEW_NAME comes in.
-          assert(fileInfo->NextEntryOffset != 0);
-          infoPointer += fileInfo->NextEntryOffset;
-          
-          fileInfo = (struct _FILE_NOTIFY_INFORMATION*)infoPointer;
-          assert(fileInfo->Action == FILE_ACTION_RENAMED_NEW_NAME);
-          
-          t_string16 newFilename;
-          u32 newStringLength = fileInfo->FileNameLength/sizeof(char16);
-          newFilename.len = newStringLength;
-          newFilename.ptr = (char16*)fileInfo->FileName;
-          newFilename.ptr[newFilename.len] = 0;
-          
-          wprintf(L"renamed from %ls to %ls\n", filename.ptr, newFilename.ptr);
-        } break;
-      }
-      // TODO(bumbread): wait for single object
+      } break;
+      case(FILE_ACTION_REMOVED): {
+        wprintf(L"file %ls got removed\n", filename.ptr);
+      } break;
+      case(FILE_ACTION_MODIFIED): {
+        wprintf(L"file %ls got modified\n", filename.ptr);
+        
+      } break;
+      case(FILE_ACTION_RENAMED_OLD_NAME): {
+        
+        // TODO(bumbread): check if this behaviour is documented
+        // but winapi seems to be reliably sendind NEW_NAME after OLD_NAME
+        // TODO(bumbread): in case winapi decides to insert another notify information in between these two
+        // i should _actually_ write this in a loop leaving the information about
+        // the old name and writing to a flag, and clearing that flag using the name,
+        // every time NEW_NAME comes in.
+        assert(fileInfo->NextEntryOffset != 0);
+        infoPointer += fileInfo->NextEntryOffset;
+        
+        fileInfo = (struct _FILE_NOTIFY_INFORMATION*)infoPointer;
+        assert(fileInfo->Action == FILE_ACTION_RENAMED_NEW_NAME);
+        
+        t_string16 newFilename;
+        u32 newStringLength = fileInfo->FileNameLength/sizeof(char16);
+        newFilename.len = newStringLength;
+        newFilename.ptr = (char16*)fileInfo->FileName;
+        newFilename.ptr[newFilename.len] = 0;
+        
+        wprintf(L"renamed from %ls to %ls\n", filename.ptr, newFilename.ptr);
+      } break;
     }
+    // TODO(bumbread): wait for single object
   }
-  // NOTE(bumbread): huh?? i guess it's safe to leave a hanging handle, since OS handles handles for us.
-  //CloseHandle(dirHandle);
 }
 
 //
@@ -401,18 +400,12 @@ int main(void)
   
   t_string16 filePath = win32_get_path_mem(baseFilename);
   
-  // // TODO(bumbread): is this guaranteed to be the case???
-  //char16 driveLetter = filePath.ptr[0];
-  //char16 drive[4] = {driveLetter, L':', L'\\'};
-  
   t_directory_updates updates;
   updates.updatesCount = 0;
   updates.maxUpdatesCount = 8;
   updates.updates = malloc(8 * sizeof(t_update));
   updates.filePath = filePath;
-  
-  HANDLE directoryListenerHandle = CreateThread(0, 0, (LPTHREAD_START_ROUTINE)directories_listen_proc, &updates, 0, 0);
-  //free(filePath.ptr);
+  CreateThread(0, 0, (LPTHREAD_START_ROUTINE)directories_listen_proc, &updates, 0, 0);
   
   WNDCLASSEXW windowClass = {
     .cbSize = sizeof(WNDCLASSEXW),
