@@ -22,7 +22,7 @@ double typedef r64;
 
 u8 typedef byte;
 u16 typedef word;
-u16 typedef char16;
+wchar_t typedef char16;
 
 #define internal static
 #define global static
