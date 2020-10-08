@@ -16,6 +16,7 @@
 #pragma warning(pop)
 
 #include<stdlib.h>
+#include<stdio.h>
 
 struct {
   HWND handle;
@@ -25,6 +26,112 @@ struct {
 } typedef t_window;
 
 #define get_bit(num, bit) ( ((num) >> (bit)) & 1)
+
+// NOTE(bumbread): directory update polling thread related functions
+
+struct {
+  u32 _stub;
+} typedef t_update;
+
+struct {
+  // TODO(bumbread): actually write updates
+  u32 maxUpdatesCount;
+  u32 updatesCount;
+  t_update* updates;
+  t_string16 filePath;
+} typedef t_directory_updates;
+
+internal DWORD WINAPI directories_listen_proc(t_directory_updates* updates) {
+  HANDLE dirHandle = CreateFileW((LPCWSTR)updates->filePath.ptr, GENERIC_READ, 
+                                 FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+                                 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+  DWORD lastError = GetLastError();
+  assert(dirHandle != INVALID_HANDLE_VALUE);
+  // TODO(bumbread): this should be on the stack
+  byte* infos = (byte*)calloc(1024, 1);
+  
+  {
+    loop {
+      byte* infoPointer = infos;
+      DWORD bytesReturned = 0;
+      
+      // TODO(bumbread): separate check to whether the name
+      // of the watched directory had changed.
+      wprintf(L"waiting for the next dir change...\n");
+      bool result = ReadDirectoryChangesW(dirHandle, infos, 1024,
+                                          false, FILE_NOTIFY_CHANGE_FILE_NAME
+                                          | FILE_NOTIFY_CHANGE_SIZE
+                                          | FILE_NOTIFY_CHANGE_LAST_WRITE
+                                          | FILE_NOTIFY_CHANGE_LAST_ACCESS
+                                          |FILE_NOTIFY_CHANGE_CREATION,
+                                          &bytesReturned, 0, 0);
+      // TODO(bumbread): make sure this code doesn't crash 
+      // because the buffer was too short
+      assert(result);
+      struct _FILE_NOTIFY_INFORMATION* fileInfo = (struct _FILE_NOTIFY_INFORMATION*)infoPointer;
+      
+      t_string16 filename;
+      u32 stringLength = fileInfo->FileNameLength/sizeof(char16);
+      filename.len = stringLength;
+      filename.ptr = (char16*)fileInfo->FileName;
+      filename.ptr[filename.len] = 0;
+      
+      switch(fileInfo->Action) {
+        case(FILE_ACTION_ADDED): {
+          wprintf(L"file %ls got added\n", filename.ptr);
+#if 0
+          // NOTE(bumbread): code in this block shouldn't be in here for now
+          {
+            t_string16 fullName = win32_get_full_filepath_mem(filename);
+            t_file_entry fileEntry;
+            fileEntry.filename = fullName;
+            fileEntry.extension = win32_get_file_extension(fullName);
+            win32_add_file_entry(&directoryState, fileEntry);
+          }
+#endif
+        } break;
+        case(FILE_ACTION_REMOVED): {
+          wprintf(L"file %ls got removed\n", filename.ptr);
+        } break;
+        case(FILE_ACTION_MODIFIED): {
+          wprintf(L"file %ls got modified\n", filename.ptr);
+          
+        } break;
+        case(FILE_ACTION_RENAMED_OLD_NAME): {
+          
+          // TODO(bumbread): check if this behaviour is documented
+          // but winapi seems to be reliably sendind NEW_NAME after OLD_NAME
+          // TODO(bumbread): in case winapi decides to insert another notify information in between these two
+          // i should _actually_ write this in a loop leaving the information about
+          // the old name and writing to a flag, and clearing that flag using the name,
+          // every time NEW_NAME comes in.
+          assert(fileInfo->NextEntryOffset != 0);
+          infoPointer += fileInfo->NextEntryOffset;
+          
+          fileInfo = (struct _FILE_NOTIFY_INFORMATION*)infoPointer;
+          assert(fileInfo->Action == FILE_ACTION_RENAMED_NEW_NAME);
+          
+          t_string16 newFilename;
+          u32 newStringLength = fileInfo->FileNameLength/sizeof(char16);
+          newFilename.len = newStringLength;
+          newFilename.ptr = (char16*)fileInfo->FileName;
+          newFilename.ptr[newFilename.len] = 0;
+          
+          wprintf(L"renamed from %ls to %ls\n", filename.ptr, newFilename.ptr);
+        } break;
+      }
+      // TODO(bumbread): wait for single object
+    }
+  }
+  // NOTE(bumbread): huh?? i guess it's safe to leave a hanging handle, since OS handles handles for us.
+  //CloseHandle(dirHandle);
+}
+
+//
+//
+//
+
+// NOTE(bumbread): functions used in main thread
 
 internal void
 resize_window(t_window* window, u32 newClientWidth, u32 newClientHeight) {
@@ -239,8 +346,6 @@ internal void win32_add_file_entry(t_directory_state* directory, t_file_entry fi
   directory->fileCount += 1;
 }
 
-
-#include<stdio.h>
 #define use_windows_main 0
 
 #if(use_windows_main != 0)
@@ -259,11 +364,14 @@ int main(void)
   t_string16 baseFilename = win32_argstring_get_full_path(commandLine);
   // TODO(bumbread): test this more on invalid inputs
   // so far this seems to be more-less robust function
+  // TODO(bumbread): this program crashes on baseFilename.ptr == 0
+  // when commandLine doesn't have the second argument
   assert(baseFilename.ptr);
   
   // TODO(bumbread): check that search mask never has a trailing backslash
   // this function fails on trailing backslashes
   t_string16 searchPath = win32_make_path_wildcard_mem(baseFilename);
+  
   WIN32_FIND_DATAW findData;
   HANDLE searchHandle = FindFirstFileExW((LPWSTR)searchPath.ptr,
                                          FindExInfoBasic,
@@ -292,88 +400,19 @@ int main(void)
   free(searchPath.ptr);
   
   t_string16 filePath = win32_get_path_mem(baseFilename);
-  // TODO(bumbread): is this guaranteed to be the case???
+  
+  // // TODO(bumbread): is this guaranteed to be the case???
   //char16 driveLetter = filePath.ptr[0];
   //char16 drive[4] = {driveLetter, L':', L'\\'};
   
-  HANDLE dirHandle = CreateFileW((LPCWSTR)filePath.ptr, GENERIC_READ, 
-                                 FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-                                 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
-  DWORD lastError = GetLastError();
-  assert(dirHandle != INVALID_HANDLE_VALUE);
-  byte* infos = (byte*)calloc(1024, 1);
+  t_directory_updates updates;
+  updates.updatesCount = 0;
+  updates.maxUpdatesCount = 8;
+  updates.updates = malloc(8 * sizeof(t_update));
+  updates.filePath = filePath;
   
-  {
-    loop {
-      byte* infoPointer = infos;
-      DWORD bytesReturned = 0;
-      
-      // TODO(bumbread): separate check to whether the name
-      // of the watched directory had changed.
-      wprintf(L"waiting for the next dir change...\n");
-      bool result = ReadDirectoryChangesW(dirHandle, infos, 1024,
-                                          false, FILE_NOTIFY_CHANGE_FILE_NAME
-                                          | FILE_NOTIFY_CHANGE_SIZE
-                                          | FILE_NOTIFY_CHANGE_LAST_WRITE
-                                          | FILE_NOTIFY_CHANGE_LAST_ACCESS
-                                          |FILE_NOTIFY_CHANGE_CREATION,
-                                          &bytesReturned, 0, 0);
-      // TODO(bumbread): make sure this code doesn't crash 
-      // because the buffer was too short
-      assert(result);
-      // NOTE(bumbread): this line of code is only to disable compiler warnings
-      // while testing
-      if(result == 0) break; 
-      struct _FILE_NOTIFY_INFORMATION* fileInfo = (struct _FILE_NOTIFY_INFORMATION*)infoPointer;
-      
-      t_string16 filename;
-      u32 stringLength = fileInfo->FileNameLength/sizeof(char16);
-      filename.len = stringLength;
-      filename.ptr = (char16*)fileInfo->FileName;
-      filename.ptr[filename.len] = 0;
-      
-      switch(fileInfo->Action) {
-        case(FILE_ACTION_ADDED): {
-          wprintf(L"file %ls got added\n", filename.ptr);
-          t_string16 fullName = win32_get_full_filepath_mem(filename);
-          t_file_entry fileEntry;
-          fileEntry.filename = fullName;
-          fileEntry.extension = win32_get_file_extension(fullName);
-          win32_add_file_entry(&directoryState, fileEntry);
-        } break;
-        case(FILE_ACTION_REMOVED): {
-          wprintf(L"file %ls got removed\n", filename.ptr);
-        } break;
-        case(FILE_ACTION_MODIFIED): {
-          wprintf(L"file %ls got modified\n", filename.ptr);
-          
-        } break;
-        case(FILE_ACTION_RENAMED_OLD_NAME): {
-          
-          assert(fileInfo->NextEntryOffset != 0);
-          infoPointer += fileInfo->NextEntryOffset;
-          
-          fileInfo = (struct _FILE_NOTIFY_INFORMATION*)infoPointer;
-          assert(fileInfo->Action == FILE_ACTION_RENAMED_NEW_NAME);
-          
-          t_string16 newFilename;
-          u32 newStringLength = fileInfo->FileNameLength/sizeof(char16);
-          newFilename.len = newStringLength;
-          newFilename.ptr = (char16*)fileInfo->FileName;
-          newFilename.ptr[newFilename.len] = 0;
-          
-          wprintf(L"renamed from %ls to %ls\n", filename.ptr, newFilename.ptr);
-        } break;
-      }
-    }
-    
-  }
-  
-  CloseHandle(dirHandle);
-  wprintf(L"broke out!\n");
-  
-  free(infos);
-  free(filePath.ptr);
+  HANDLE directoryListenerHandle = CreateThread(0, 0, (LPTHREAD_START_ROUTINE)directories_listen_proc, &updates, 0, 0);
+  //free(filePath.ptr);
   
   WNDCLASSEXW windowClass = {
     .cbSize = sizeof(WNDCLASSEXW),
@@ -404,6 +443,9 @@ int main(void)
     if(exit) break;
     
     win32_draw_app(&global_programState, &global_window, deviceContext);
+    
+    // TODO(bumbread): process updates
+    // TODO(bumbread): set object handle
     
     for(u32 keyIndex = 0; keyIndex < KEYBOARD_SIZE; keyIndex += 1) {
       global_keyboard[keyIndex].pressed = false;
