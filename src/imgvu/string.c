@@ -35,7 +35,7 @@ internal bool has_substring_string16(t_string16 string, t_string16 sub) {
 internal bool string16_compare_char16(t_string16 string, char16* chars) {
   for(u32 charIndex = 0; charIndex < string.len; charIndex += 1) {
     if(chars[charIndex] == 0) return(true);
-    if(string.ptr[charIndex] != chats[charIndex]) return(false);
+    if(string.ptr[charIndex] != chars[charIndex]) return(false);
   }
   return(true);
 }
