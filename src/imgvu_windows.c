@@ -347,6 +347,11 @@ internal t_string16 win32_argstring_get_full_path(LPWSTR commandLine) {
     }
     assert(filePath != 0);
     t_string16 filepathString = char16_to_string16((char16*)filePath);
+    if(has_substring_char16(filepathString, L"\\\\?\\")) {
+      filepathString.len -= 4;
+      filepathString.ptr += 4;
+    }
+    
     t_string16 fullPath = win32_get_full_filepath_mem(filepathString);
     return(fullPath);
   }
