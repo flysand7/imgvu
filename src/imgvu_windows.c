@@ -211,18 +211,10 @@ internal t_string16 win32_argstring_get_full_path(LPWSTR commandLine) {
   return(result);
 }
 
-#define use_windows_main 0
-
-#if(use_windows_main != 0)
-int wWinMain(HINSTANCE instance, HINSTANCE m_unused0, LPWSTR commandLine, int cmdShow) 
-#else
 int main(void)
-#endif
 {
-#if(use_windows_main == 0)
   LPWSTR commandLine = GetCommandLineW();
   HINSTANCE instance = GetModuleHandle(0);
-#endif
   
   t_directory_state directoryState = {0};
   t_string16 baseFilename = win32_argstring_get_full_path(commandLine);

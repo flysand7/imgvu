@@ -69,8 +69,6 @@ internal t_string16 win32_get_file_extension(t_string16 name) {
   return(result);
 }
 
-//internal t_string16 win32_get_short_filename(t_string16 relativeName);
-
 internal t_string16 win32_get_file_path_mem(t_string16 fullPath) {
   t_string16 result;
   result.ptr = (char16*)malloc(fullPath.len);
