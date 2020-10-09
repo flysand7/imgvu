@@ -37,6 +37,13 @@ struct {
 } typedef t_update;
 
 struct {
+  // NOTE(bumbread): so far it seems to work pretty
+  // reliably?
+  // TODO(bumbread): more thread robustness
+  // i'm trying this out only for educational purposes
+  // (always step on your rakes, if you got one!)
+  bool dataWrite;
+  bool dataRead;
   // TODO(bumbread): actually write updates
   u32 maxUpdatesCount;
   u32 updatesCount;
@@ -125,7 +132,31 @@ internal DWORD WINAPI directories_listen_proc(t_directory_updates* updates) {
         wprintf(L"renamed from %ls to %ls\n", filename.ptr, newFilename.ptr);
       } break;
     }
-    // TODO(bumbread): wait for single object
+    
+    // NOTE(bumbread): waiting for the main thread to consume previous data
+    while(updates->dataRead && (updates->updatesCount != 0));
+    if(!updates->dataRead && (updates->updatesCount == 0)) {
+      updates->dataWrite = true;
+      
+#if 1
+      // NOTE(bumbread): this simulates writing data to a shared
+      // resource, the output stream of this program.
+      printf("##############################################\n");
+      printf("##############################################\n");
+      printf("##############################################\n");
+      printf("##############################################\n");
+      printf("##############################################\n");
+      printf("##############################################\n");
+      printf("##############################################\n");
+      printf("##############################################\n");
+      printf("##############################################\n");
+      printf("##############################################\n");
+      printf("##############################################\n");
+#endif
+      
+      updates->updatesCount += 1;
+      updates->dataWrite = false;
+    }
   }
 }
 
@@ -422,6 +453,8 @@ int main(void)
   updates.maxUpdatesCount = 8;
   updates.updates = malloc(8 * sizeof(t_update));
   updates.filePath = filePath;
+  updates.dataWrite = false;
+  updates.dataRead = false;
   CreateThread(0, 0, (LPTHREAD_START_ROUTINE)directories_listen_proc, &updates, 0, 0);
   
   WNDCLASSEXW windowClass = {
@@ -439,8 +472,10 @@ int main(void)
   ShowWindow(global_window.handle, SW_SHOWDEFAULT);
   HDC deviceContext = GetDC(global_window.handle);
   
+  
   global_running = true;
   loop {
+    
     MSG message;
     while(PeekMessageW(&message, global_window.handle, 0, 0, PM_REMOVE)) {
       TranslateMessage(&message);
@@ -454,8 +489,32 @@ int main(void)
     
     win32_draw_app(&global_programState, &global_window, deviceContext);
     
-    // TODO(bumbread): process updates
-    // TODO(bumbread): set object handle
+    if(!updates.dataWrite) {
+      if(updates.updatesCount != 0) {
+        updates.dataRead = true;
+        
+#if 1
+        // NOTE(bumbread): simulating reading data  from a shared
+        // resource, instead we're writing to stdout to make
+        // sure they don't overlap.
+        printf("______________________________________________\n");
+        printf("______________________________________________\n");
+        printf("______________________________________________\n");
+        printf("______________________________________________\n");
+        printf("______________________________________________\n");
+        printf("______________________________________________\n");
+        printf("______________________________________________\n");
+        printf("______________________________________________\n");
+        printf("______________________________________________\n");
+        printf("______________________________________________\n");
+        printf("______________________________________________\n");
+#endif
+        
+        updates.updatesCount = 0;
+        updates.dataRead = false;
+        
+      }
+    }
     
     for(u32 keyIndex = 0; keyIndex < KEYBOARD_SIZE; keyIndex += 1) {
       global_keyboard[keyIndex].pressed = false;
