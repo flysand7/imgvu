@@ -21,7 +21,7 @@ internal t_string16 win32_make_path_wildcard_mem(t_string16 fullPath) {
 internal t_string16 win32_get_full_path_to_file_mem(t_string16 name) {
   t_string16 result;
   // NOTE(bumbread): making sure there's no \\?\.
-  if(has_substring_char16(name, L"\\\\?\\")) {
+  if(begins_with_char16(name, L"\\\\?\\")) {
     name.len -= 4;
     name.ptr += 4;
   }
@@ -120,5 +120,5 @@ internal t_string16 win32_get_dir_level_mem(t_string16 filename, u32 level) {
 }
 
 internal bool directory_contains(t_string16 root, t_string16 dir) {
-  return(has_substring_string16(dir, root));
+  return(begins_with_string16(dir, root));
 }

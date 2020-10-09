@@ -166,6 +166,7 @@ internal void request_next_image(t_directory_state* directoryState) {
   do {
     t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
     
+    // TODO(bumbread): reload data if the timestamp changed
     WIN32_FIND_DATAW unused_;
     HANDLE fileHandle = FindFirstFileW((LPWSTR)newEntry->filename.ptr, &unused_);
     if(fileHandle == INVALID_HANDLE_VALUE) {
@@ -185,6 +186,7 @@ internal void request_prev_image(t_directory_state* directoryState) {
   do {
     t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
     
+    // TODO(bumbread): reload data if the timestamp changed
     WIN32_FIND_DATAW unused_;
     HANDLE fileHandle = FindFirstFileW((LPWSTR)newEntry->filename.ptr, &unused_);
     if(fileHandle == INVALID_HANDLE_VALUE) {

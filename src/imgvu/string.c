@@ -16,7 +16,7 @@ internal t_string16 char16_to_string16(char16* chars) {
   return(result);
 }
 
-internal bool has_substring_char16(t_string16 string, char16* chars) {
+internal bool begins_with_char16(t_string16 string, char16* chars) {
   for(u32 charIndex = 0; charIndex < string.len; charIndex += 1) {
     if(chars[charIndex] == 0) return(true);
     if(string.ptr[charIndex] != chars[charIndex]) return(false);
@@ -24,7 +24,7 @@ internal bool has_substring_char16(t_string16 string, char16* chars) {
   return(false);
 }
 
-internal bool has_substring_string16(t_string16 string, t_string16 sub) {
+internal bool begins_with_string16(t_string16 string, t_string16 sub) {
   if(string.len < sub.len) return(false);
   for(u32 charIndex = 0; charIndex < string.len; charIndex += 1) {
     if(string.ptr[charIndex] != sub.ptr[charIndex]) return(false);
