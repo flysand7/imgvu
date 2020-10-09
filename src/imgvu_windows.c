@@ -31,134 +31,6 @@ struct {
   u32* pixels;
 } typedef t_window;
 
-struct {
-  u32 _stub;
-} typedef t_update;
-
-struct {
-  // NOTE(bumbread): so far it seems to work pretty
-  // reliably?
-  // TODO(bumbread): more thread robustness
-  // i'm trying this out only for educational purposes
-  // (always step on your rakes, if you got one!)
-  bool dataWrite;
-  bool dataRead;
-  // TODO(bumbread): actually write updates
-  u32 maxUpdatesCount;
-  u32 updatesCount;
-  t_update* updates;
-  t_string16 filePath;
-} typedef t_directory_updates;
-
-// TODO(bumbread): rewrite this so that it handles all updates from the root of the
-// disk up to the target directory, and only select the updates that directly touch 
-// any directory above the target folder, target folder itself or the subdirectory
-// of the target folder
-internal DWORD WINAPI directories_listen_proc(t_directory_updates* updates) {
-  HANDLE dirHandle = CreateFileW((LPCWSTR)updates->filePath.ptr, GENERIC_READ, 
-                                 FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-                                 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
-  assert(dirHandle != INVALID_HANDLE_VALUE);
-  byte infos[1024] = {0};
-  loop {
-    byte* infoPointer = infos;
-    DWORD bytesReturned = 0;
-    
-    // TODO(bumbread): separate check to whether the name
-    // of the watched directory had changed.
-    wprintf(L"waiting for the next dir change...\n");
-    // TODO(bumbread): check if the function below works in other
-    // commonly used filesystems.
-    bool result = ReadDirectoryChangesW(dirHandle, infos, 1024,
-                                        false, FILE_NOTIFY_CHANGE_FILE_NAME
-                                        | FILE_NOTIFY_CHANGE_SIZE
-                                        | FILE_NOTIFY_CHANGE_LAST_WRITE
-                                        | FILE_NOTIFY_CHANGE_LAST_ACCESS
-                                        |FILE_NOTIFY_CHANGE_CREATION,
-                                        &bytesReturned, 0, 0);
-    // TODO(bumbread): make sure this code doesn't crash 
-    // because the buffer was too short
-    assert(result);
-    struct _FILE_NOTIFY_INFORMATION* fileInfo = (struct _FILE_NOTIFY_INFORMATION*)infoPointer;
-    
-    t_string16 filename;
-    u32 stringLength = fileInfo->FileNameLength/sizeof(char16);
-    filename.len = stringLength;
-    filename.ptr = (char16*)fileInfo->FileName;
-    filename.ptr[filename.len] = 0;
-    
-    switch(fileInfo->Action) {
-      case(FILE_ACTION_ADDED): {
-        wprintf(L"file %ls got added\n", filename.ptr);
-#if 0
-        // NOTE(bumbread): code in this block shouldn't be in here for now
-        {
-          t_string16 fullName = win32_get_full_filepath_mem(filename);
-          t_file_entry fileEntry;
-          fileEntry.filename = fullName;
-          fileEntry.extension = win32_get_file_extension(fullName);
-          win32_add_file_entry(&directoryState, fileEntry);
-        }
-#endif
-      } break;
-      case(FILE_ACTION_REMOVED): {
-        wprintf(L"file %ls got removed\n", filename.ptr);
-      } break;
-      case(FILE_ACTION_MODIFIED): {
-        wprintf(L"file %ls got modified\n", filename.ptr);
-        
-      } break;
-      case(FILE_ACTION_RENAMED_OLD_NAME): {
-        
-        // TODO(bumbread): check if this behaviour is documented
-        // but winapi seems to be reliably sendind NEW_NAME after OLD_NAME
-        // TODO(bumbread): in case winapi decides to insert another notify information in between these two
-        // i should _actually_ write this in a loop leaving the information about
-        // the old name and writing to a flag, and clearing that flag using the name,
-        // every time NEW_NAME comes in.
-        assert(fileInfo->NextEntryOffset != 0);
-        infoPointer += fileInfo->NextEntryOffset;
-        
-        fileInfo = (struct _FILE_NOTIFY_INFORMATION*)infoPointer;
-        assert(fileInfo->Action == FILE_ACTION_RENAMED_NEW_NAME);
-        
-        t_string16 newFilename;
-        u32 newStringLength = fileInfo->FileNameLength/sizeof(char16);
-        newFilename.len = newStringLength;
-        newFilename.ptr = (char16*)fileInfo->FileName;
-        newFilename.ptr[newFilename.len] = 0;
-        
-        wprintf(L"renamed from %ls to %ls\n", filename.ptr, newFilename.ptr);
-      } break;
-    }
-    
-    // NOTE(bumbread): waiting for the main thread to consume previous data
-    while(updates->dataRead && (updates->updatesCount != 0));
-    if(!updates->dataRead && (updates->updatesCount == 0)) {
-      updates->dataWrite = true;
-      
-#if 1
-      // NOTE(bumbread): this simulates writing data to a shared
-      // resource, the output stream of this program.
-      printf("##############################################\n");
-      printf("##############################################\n");
-      printf("##############################################\n");
-      printf("##############################################\n");
-      printf("##############################################\n");
-      printf("##############################################\n");
-      printf("##############################################\n");
-      printf("##############################################\n");
-      printf("##############################################\n");
-      printf("##############################################\n");
-      printf("##############################################\n");
-#endif
-      
-      updates->updatesCount += 1;
-      updates->dataWrite = false;
-    }
-  }
-}
-
 internal void
 resize_window(t_window* window, u32 newClientWidth, u32 newClientHeight) {
   if((newClientWidth != window->clientWidth) 
@@ -309,16 +181,10 @@ int main(void)
   t_string16 baseFilename = win32_argstring_get_full_path(commandLine);
   // TODO(bumbread): test this more on invalid inputs
   
-  // TODO(bumbread): check that search mask never has a trailing backslash
-  // this function fails on trailing backslashes
+  win32_remove_trailing_backslash(&baseFilename);
   bool isPathValid = PathFileExistsW(baseFilename.ptr);
   if(!isPathValid) {
-    // TODO(bumbread): possible to handle this case separately by, for example waiting
-    // for the empty directory to be created.
-    // this also opens up a lot of possibilities for handling the filenames from 
-    // the dir listening thread, since if i listen to the directories
-    // starting from the drive root, i don't have to worry about
-    // target filepath existing.
+    // TODO(bumbread): remove if not needed
     debug_variable_unused(isPathValid);
   }
   t_string16 searchPath = win32_make_path_wildcard_mem(baseFilename);
@@ -350,17 +216,6 @@ int main(void)
   }
   free(searchPath.ptr);
   
-  t_string16 filePath = win32_get_file_path_mem(baseFilename);
-  
-  t_directory_updates updates;
-  updates.updatesCount = 0;
-  updates.maxUpdatesCount = 8;
-  updates.updates = malloc(8 * sizeof(t_update));
-  updates.filePath = filePath;
-  updates.dataWrite = false;
-  updates.dataRead = false;
-  CreateThread(0, 0, (LPTHREAD_START_ROUTINE)directories_listen_proc, &updates, 0, 0);
-  
   WNDCLASSEXW windowClass = {
     .cbSize = sizeof(WNDCLASSEXW),
     .style = CS_HREDRAW | CS_VREDRAW,
@@ -375,7 +230,6 @@ int main(void)
   assert(global_window.handle);
   ShowWindow(global_window.handle, SW_SHOWDEFAULT);
   HDC deviceContext = GetDC(global_window.handle);
-  
   
   global_running = true;
   loop {
@@ -392,33 +246,6 @@ int main(void)
     if(exit) break;
     
     win32_draw_app(&global_programState, &global_window, deviceContext);
-    
-    if(!updates.dataWrite) {
-      if(updates.updatesCount != 0) {
-        updates.dataRead = true;
-        
-#if 1
-        // NOTE(bumbread): simulating reading data  from a shared
-        // resource, instead we're writing to stdout to make
-        // sure they don't overlap.
-        printf("______________________________________________\n");
-        printf("______________________________________________\n");
-        printf("______________________________________________\n");
-        printf("______________________________________________\n");
-        printf("______________________________________________\n");
-        printf("______________________________________________\n");
-        printf("______________________________________________\n");
-        printf("______________________________________________\n");
-        printf("______________________________________________\n");
-        printf("______________________________________________\n");
-        printf("______________________________________________\n");
-#endif
-        
-        updates.updatesCount = 0;
-        updates.dataRead = false;
-        
-      }
-    }
     
     for(u32 keyIndex = 0; keyIndex < KEYBOARD_SIZE; keyIndex += 1) {
       global_keyboard[keyIndex].pressed = false;
