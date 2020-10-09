@@ -147,6 +147,53 @@ internal void win32_add_file_entry(t_directory_state* directory, t_file_entry fi
   directory->fileCount += 1;
 }
 
+internal void win32_remove_file_entry(t_directory_state* directoryState, u32 index) {
+  t_file_entry* entryToDelete = directoryState->files + index;
+  free(entryToDelete->filename.ptr);
+  
+  for(u32 currentIndex = index; currentIndex < directoryState->fileCount - 1; currentIndex += 1) {
+    directoryState->files[currentIndex] = directoryState->files[currentIndex+1];
+  }
+}
+
+internal void request_next_image(t_directory_state* directoryState) {
+  directoryState->fileIndex += 1;
+  if(directoryState->fileIndex == directoryState->fileCount) {
+    directoryState->fileIndex = 0;
+  }
+  
+  bool fileExists = true;
+  do {
+    t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
+    
+    WIN32_FIND_DATAW unused_;
+    HANDLE fileHandle = FindFirstFileW((LPWSTR)newEntry->filename.ptr, &unused_);
+    if(fileHandle == INVALID_HANDLE_VALUE) {
+      fileExists = false;
+      win32_remove_file_entry(directoryState, directoryState->fileIndex);
+    }
+  } while(!fileExists && (directoryState->fileCount != 0));
+}
+
+internal void request_prev_image(t_directory_state* directoryState) {
+  if(directoryState->fileIndex == 0) {
+    directoryState->fileIndex = directoryState->fileCount;
+  }
+  directoryState->fileIndex -= 1;
+  
+  bool fileExists = true;
+  do {
+    t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
+    
+    WIN32_FIND_DATAW unused_;
+    HANDLE fileHandle = FindFirstFileW((LPWSTR)newEntry->filename.ptr, &unused_);
+    if(fileHandle == INVALID_HANDLE_VALUE) {
+      fileExists = false;
+      win32_remove_file_entry(directoryState, directoryState->fileIndex);
+    }
+  } while(fileExists && (directoryState->fileCount != 0));
+}
+
 internal t_string16 win32_argstring_get_full_path(LPWSTR commandLine) {
   t_string16 result = {0};
   int argCount = 0;

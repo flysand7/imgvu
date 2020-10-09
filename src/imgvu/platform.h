@@ -16,7 +16,7 @@ struct {
 } typedef t_directory_state;
 
 // NOTE(bumbread): the api that *will* be used by the application
-internal void request_next_image(void);
-internal void request_prev_image(void);
+internal void request_next_image(t_directory_state*);
+internal void request_prev_image(t_directory_state*);
 
 #endif //PLATFORM_H
