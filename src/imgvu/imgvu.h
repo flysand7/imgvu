@@ -3,8 +3,6 @@
 #ifndef IMGVU_H
 #define IMGVU_H
 
-// TODO(bumbread): let the platform layer decide whether 
-// it needs to be linked to CRT.
 #include<stdint.h>
 int8_t typedef i8;
 uint8_t typedef u8;
@@ -37,11 +35,11 @@ wchar_t typedef char16;
 
 struct {
   
-  int _stub;
+  bool shouldRender;
+  t_rendered_image image;
   
 } typedef t_program_state;
 
-internal bool update_app(t_button* keyboard, t_program_state* programState, r32 dt);
-internal void draw_app(t_program_state* programState);
+internal bool update_app(t_button*, t_program_state*, t_directory_state*, r32);
 
 #endif //IMGVU_H

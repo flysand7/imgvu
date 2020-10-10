@@ -20,12 +20,23 @@
 // 
 // 
 
-internal bool update_app(t_button* keyboard, t_program_state* programState, r32 dt) {
+internal load_texture(t_file_entry* fileEntry) {
+  if(!fileEntry->hasTexture) {
+    
+  }
+}
+
+internal bool update_app(t_button* keyboard, 
+                         t_program_state* programState, 
+                         t_directory_state* directoryState, 
+                         r32 dt) {
   if(keyboard[VKEY_ESCAPE].pressed) return(true);
+  
+  if(!programState->shouldRender) {
+    request_curr_image(directoryState);
+    t_file_entry* file = directoryState->files + directoryState->fileIndex;
+    load_texture(file);
+  }
+  
   return(false);
 }
-
-internal void draw_app(t_program_state* programState) {
-  
-}
-
