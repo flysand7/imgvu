@@ -157,43 +157,93 @@ internal void win32_remove_file_entry(t_directory_state* directoryState, u32 ind
 }
 
 internal void request_next_image(t_directory_state* directoryState) {
+  t_file_entry* lastEntry = directoryState->files + directoryState->fileIndex;
+  assert(lastEntry->data != 0);
+  free(lastEntry->data);
+  lastEntry->data = 0;
+  lastEntry->size = 0;
+  
   directoryState->fileIndex += 1;
   if(directoryState->fileIndex == directoryState->fileCount) {
     directoryState->fileIndex = 0;
   }
   
-  bool fileExists = true;
+  HANDLE lastHandle = 0;
   do {
     t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
     
-    // TODO(bumbread): reload data if the timestamp changed
-    WIN32_FIND_DATAW unused_;
-    HANDLE fileHandle = FindFirstFileW((LPWSTR)newEntry->filename.ptr, &unused_);
+    HANDLE fileHandle = CreateFileW((LPWSTR)newEntry->filename.ptr, GENERIC_READ, FILE_SHARE_READ,
+                                    0, OPEN_EXISTING, 0, 0);
     if(fileHandle == INVALID_HANDLE_VALUE) {
-      fileExists = false;
       win32_remove_file_entry(directoryState, directoryState->fileIndex);
+      if(directoryState->fileIndex == directoryState->fileCount) {
+        directoryState->fileIndex = 0;
+      }
     }
-  } while(!fileExists && (directoryState->fileCount != 0));
+    else lastHandle = fileHandle;
+  } while((lastHandle == 0) && (directoryState->fileCount != 0));
+  
+  if(lastHandle != 0) {
+    t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
+    
+    LARGE_INTEGER fileSize;
+    GetFileSizeEx(lastHandle, &fileSize);
+    newEntry->size = (u32)fileSize.LowPart;
+    newEntry->data = malloc(newEntry->size);
+    
+    DWORD bytesRead = 0;
+    bool result = ReadFile(lastHandle, newEntry->data, newEntry->size, &bytesRead, 0);
+    assert((u32)bytesRead == newEntry->size);
+    assert(result);
+    
+    CloseHandle(lastHandle);
+  }
 }
 
 internal void request_prev_image(t_directory_state* directoryState) {
+  t_file_entry* lastEntry = directoryState->files + directoryState->fileIndex;
+  assert(lastEntry->data != 0);
+  free(lastEntry->data);
+  lastEntry->data = 0;
+  lastEntry->size = 0;
+  
   if(directoryState->fileIndex == 0) {
     directoryState->fileIndex = directoryState->fileCount;
   }
   directoryState->fileIndex -= 1;
   
-  bool fileExists = true;
+  HANDLE lastHandle = 0;
   do {
     t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
     
-    // TODO(bumbread): reload data if the timestamp changed
-    WIN32_FIND_DATAW unused_;
-    HANDLE fileHandle = FindFirstFileW((LPWSTR)newEntry->filename.ptr, &unused_);
+    HANDLE fileHandle = CreateFileW((LPWSTR)newEntry->filename.ptr, GENERIC_READ, FILE_SHARE_READ,
+                                    0, OPEN_EXISTING, 0, 0);
     if(fileHandle == INVALID_HANDLE_VALUE) {
-      fileExists = false;
       win32_remove_file_entry(directoryState, directoryState->fileIndex);
+      if(directoryState->fileIndex == 0) {
+        directoryState->fileIndex = directoryState->fileCount;
+      }
+      directoryState->fileIndex -= 1;
     }
-  } while(fileExists && (directoryState->fileCount != 0));
+    else lastHandle = fileHandle;
+    
+  } while((lastHandle == 0) && (directoryState->fileCount != 0));
+  
+  if(lastHandle != 0) {
+    t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
+    
+    LARGE_INTEGER fileSize;
+    GetFileSizeEx(lastHandle, &fileSize);
+    newEntry->size = (u32)fileSize.LowPart;
+    newEntry->data = malloc(newEntry->size);
+    
+    DWORD bytesRead = 0;
+    bool result = ReadFile(lastHandle, newEntry->data, newEntry->size, &bytesRead, 0);
+    assert((u32)bytesRead == newEntry->size);
+    assert(result);
+    
+    CloseHandle(lastHandle);
+  }
 }
 
 internal t_string16 win32_argstring_get_full_path(LPWSTR commandLine) {

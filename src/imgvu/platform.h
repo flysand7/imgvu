@@ -6,6 +6,8 @@
 struct {
   t_string16 filename;
   t_string16 extension;
+  void* data;
+  u32 size;
 } typedef t_file_entry;
 
 struct {
