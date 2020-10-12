@@ -36,8 +36,7 @@ set common_flags=%mode% %defines% -nologo -FC -Wall -WX -TC -Ob1 -Oi -EHa -c -Zp
 set msvc_flags=%common_flags% -Qspectre -Zf ^
 	-Fe"%output_file_name%.exe"^
 	-Fo"%output_file_name%.obj"^
-	-Fd"%output_file_name%.pdb"^
-	-U__cplusplus
+	-Fd"%output_file_name%.pdb"
 	
 set clang_flags=%common_flags%^
 	-showFilenames -fdiagnostics-absolute-paths^
