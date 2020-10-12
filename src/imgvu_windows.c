@@ -139,7 +139,7 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
   return(0);
 }
 
-internal void directory_add(t_directory_state* state, t_string16 filename) {
+internal void win32_directory_add(t_directory_state* state, t_string16 filename) {
   if(state->fileCount + 1 > state->filesAllocated) {
     state->filesAllocated *= 2;
     if(state->filesAllocated == 0) state->filesAllocated = 1;
@@ -155,7 +155,7 @@ internal void directory_add(t_directory_state* state, t_string16 filename) {
   state->fileCount += 1;
 }
 
-internal void directory_clear(t_directory_state* state) {
+internal void win32_directory_clear(t_directory_state* state) {
   for(u32 file = 0; file < state->fileCount; file += 1) {
     t_string16* name = state->names + file;
     assert(name != 0);
@@ -172,7 +172,7 @@ internal void directory_clear(t_directory_state* state) {
   state->fileCount = 0;
 }
 
-internal void directory_scan(t_directory_state* state) {
+internal void win32_directory_scan(t_directory_state* state) {
   assert(state->dirPath.ptr);
   assert(state->dirSearchPath.ptr);
   assert(state->fileCount == 0);
@@ -184,7 +184,7 @@ internal void directory_scan(t_directory_state* state) {
       
       t_string16 shortName = char16_count((char16*)findData.cFileName);
       t_string16 fullName = win32_get_file_path_mem(shortName);
-      directory_add(state, fullName);
+      win32_directory_add(state, fullName);
       
     } while(FindNextFileW(searchHandle, &findData));
     FindClose(searchHandle);
@@ -194,9 +194,9 @@ internal void directory_scan(t_directory_state* state) {
   }
 }
 
-internal void directory_set(t_directory_state* state, t_string16 path) {
+internal void win32_directory_set(t_directory_state* state, t_string16 path) {
   if(!string_compare(path, state->dirPath)) {
-    directory_clear(state);
+    win32_directory_clear(state);
     
     assert(state->dirSearchPath.ptr);
     assert(state->dirPath.ptr);
@@ -205,7 +205,7 @@ internal void directory_set(t_directory_state* state, t_string16 path) {
     free(state->dirPath.ptr);
     state->dirPath = path;
     state->dirSearchPath = win32_make_path_wildcard_mem(state->dirPath);
-    directory_scan(state);
+    win32_directory_scan(state);
   }
 }
 
@@ -239,7 +239,7 @@ int main(void)
   t_directory_state directoryState = {0};
   {
     t_string16 watchDir = win32_get_path_to_file_mem(fileToOpen);
-    directory_set(&directoryState, watchDir);
+    win32_directory_set(&directoryState, watchDir);
   }
   
   {
