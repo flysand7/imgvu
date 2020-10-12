@@ -1,9 +1,12 @@
 
+#pragma warning(push, 1)
+#include<stdlib.h>
+#pragma warning(pop)
+
 #include"imgvu/imgvu.h"
 #include"imgvu/main.c"
 #include"imgvu/platform.h"
 
-#define debug_variable_unused(lvalue_) do{{void* tmp=&(lvalue_);tmp = 0;}}while(0)
 
 // NOTE(bumbread): Windows.h produces shit ton of 
 // warnings starting /W4. I'm disabling them
@@ -18,8 +21,6 @@
 #pragma warning(pop)
 
 #include"windows/filesystem.c"
-
-#include<stdlib.h>
 
 struct {
   HWND handle;
@@ -45,16 +46,13 @@ internal void
 paint_window_gdi(t_window* window, HDC deviceContext) {
   assert(window->pixels);
   
-  BITMAPINFO bitmapInfo = {
-    .bmiHeader = {
-      .biSize = sizeof(BITMAPINFO),
-      .biWidth = (LONG)window->clientWidth,
-      .biHeight = (LONG)window->clientHeight,
-      .biPlanes = 1,
-      .biBitCount = 32,
-      .biCompression = BI_RGB
-    }
-  };
+  BITMAPINFO bitmapInfo = {0};
+  bitmapInfo.bmiHeader.biSize = sizeof(BITMAPINFO);
+  bitmapInfo.bmiHeader.biWidth = (LONG)window->clientWidth;
+  bitmapInfo.bmiHeader.biHeight = (LONG)window->clientHeight;
+  bitmapInfo.bmiHeader.biPlanes = 1;
+  bitmapInfo.bmiHeader.biBitCount = 32;
+  bitmapInfo.bmiHeader.biCompression = BI_RGB;
   
   StretchDIBits(deviceContext, 
                 0, 0, (LONG)window->clientWidth, (LONG)window->clientHeight,
@@ -65,27 +63,13 @@ paint_window_gdi(t_window* window, HDC deviceContext) {
 global bool global_running;
 global t_button global_keyboard[0x100];
 global t_window global_window;
-global t_program_state global_programState;
 
 internal void
-win32_draw_app(t_program_state* programState, t_window* window, HDC deviceContext) {
+win32_draw_app(t_window* window, HDC deviceContext) {
   for(u32 pixelIndex = 0; 
       pixelIndex < window->clientWidth*window->clientHeight; 
       pixelIndex += 1) {
     window->pixels[pixelIndex] = 0;
-  }
-  
-  if(programState->shouldRender) {
-    for(u32 textureX = 0; textureX < programState->image.texture.width; textureX += 1) {
-      for(u32 textureY = 0; textureY < programState->image.texture.height; textureY += 1) {
-        
-        if(textureX < window->clientWidth && textureY < window->clientHeight) {
-          u32 imagePixel= programState->image.texture.pixels[textureX + textureY * programState->image.texture.width];
-          window->pixels[textureX + textureY * window->clientWidth] = imagePixel;
-        }
-        
-      }
-    }
   }
   
   paint_window_gdi(window, deviceContext);
@@ -127,7 +111,7 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
     case(WM_PAINT): {
       PAINTSTRUCT paintStruct;
       HDC paintDC = BeginPaint(global_window.handle, &paintStruct);
-      win32_draw_app(&global_programState, &global_window, paintDC);
+      win32_draw_app(&global_window, paintDC);
       EndPaint(global_window.handle, &paintStruct);
       return(0);
     }
@@ -144,245 +128,66 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
   return(0);
 }
 
-// TODO(bumbread): presume a certain sorting pattern 
-// and add inside a sorted array.
-internal void win32_add_file_entry(t_directory_state* directory, t_file_entry fileEntry) {
-  if(directory->fileCount + 1 > directory->maxFiles) {
-    directory->maxFiles *= 2;
-    if(!directory->maxFiles) directory->maxFiles = 1;
-    directory->files = (t_file_entry*)realloc(directory->files, directory->maxFiles * sizeof(t_file_entry));
-    assert(directory->files);
-  }
-  directory->files[directory->fileCount] = fileEntry;
-  directory->fileCount += 1;
-}
-
-internal void win32_remove_file_entry(t_directory_state* directoryState, u32 index) {
-  t_file_entry* entryToDelete = directoryState->files + index;
-  free(entryToDelete->filename.ptr);
-  
-  for(u32 currentIndex = index; currentIndex < directoryState->fileCount - 1; currentIndex += 1) {
-    directoryState->files[currentIndex] = directoryState->files[currentIndex+1];
-  }
-}
-
-internal void request_curr_image(t_directory_state* directoryState) {
-  t_file_entry* lastEntry = directoryState->files + directoryState->fileIndex;
-  if(!lastEntry->data) {
-    HANDLE lastHandle = 0;
-    do {
-      t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
-      
-      HANDLE fileHandle = CreateFileW((LPWSTR)newEntry->filename.ptr, GENERIC_READ, FILE_SHARE_READ,
-                                      0, OPEN_EXISTING, 0, 0);
-      if(fileHandle == INVALID_HANDLE_VALUE) {
-        win32_remove_file_entry(directoryState, directoryState->fileIndex);
-        if(directoryState->fileIndex == directoryState->fileCount) {
-          directoryState->fileIndex = 0;
-        }
-      }
-      else lastHandle = fileHandle;
-    } while((lastHandle == 0) && (directoryState->fileCount != 0));
-    
-    if(lastHandle != 0) {
-      t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
-      
-      LARGE_INTEGER fileSize;
-      GetFileSizeEx(lastHandle, &fileSize);
-      newEntry->size = (u32)fileSize.LowPart;
-      newEntry->data = malloc(newEntry->size);
-      
-      DWORD bytesRead = 0;
-      bool result = ReadFile(lastHandle, newEntry->data, newEntry->size, &bytesRead, 0);
-      assert((u32)bytesRead == newEntry->size);
-      assert(result);
-      
-      CloseHandle(lastHandle);
-    }
-  }
-  
-  internal void request_next_image(t_directory_state* directoryState) {
-    t_file_entry* lastEntry = directoryState->files + directoryState->fileIndex;
-    assert(lastEntry->data != 0);
-    free(lastEntry->data);
-    lastEntry->data = 0;
-    lastEntry->size = 0;
-    
-    directoryState->fileIndex += 1;
-    if(directoryState->fileIndex == directoryState->fileCount) {
-      directoryState->fileIndex = 0;
-    }
-    
-    HANDLE lastHandle = 0;
-    do {
-      t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
-      
-      HANDLE fileHandle = CreateFileW((LPWSTR)newEntry->filename.ptr, GENERIC_READ, FILE_SHARE_READ,
-                                      0, OPEN_EXISTING, 0, 0);
-      if(fileHandle == INVALID_HANDLE_VALUE) {
-        win32_remove_file_entry(directoryState, directoryState->fileIndex);
-        if(directoryState->fileIndex == directoryState->fileCount) {
-          directoryState->fileIndex = 0;
-        }
-      }
-      else lastHandle = fileHandle;
-    } while((lastHandle == 0) && (directoryState->fileCount != 0));
-    
-    if(lastHandle != 0) {
-      t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
-      
-      LARGE_INTEGER fileSize;
-      GetFileSizeEx(lastHandle, &fileSize);
-      newEntry->size = (u32)fileSize.LowPart;
-      newEntry->data = malloc(newEntry->size);
-      
-      DWORD bytesRead = 0;
-      bool result = ReadFile(lastHandle, newEntry->data, newEntry->size, &bytesRead, 0);
-      assert((u32)bytesRead == newEntry->size);
-      assert(result);
-      
-      CloseHandle(lastHandle);
-    }
-  }
-}
-
-internal void request_prev_image(t_directory_state* directoryState) {
-  t_file_entry* lastEntry = directoryState->files + directoryState->fileIndex;
-  assert(lastEntry->data != 0);
-  free(lastEntry->data);
-  lastEntry->data = 0;
-  lastEntry->size = 0;
-  
-  if(directoryState->fileIndex == 0) {
-    directoryState->fileIndex = directoryState->fileCount;
-  }
-  directoryState->fileIndex -= 1;
-  
-  HANDLE lastHandle = 0;
-  do {
-    t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
-    
-    HANDLE fileHandle = CreateFileW((LPWSTR)newEntry->filename.ptr, GENERIC_READ, FILE_SHARE_READ,
-                                    0, OPEN_EXISTING, 0, 0);
-    if(fileHandle == INVALID_HANDLE_VALUE) {
-      win32_remove_file_entry(directoryState, directoryState->fileIndex);
-      if(directoryState->fileIndex == 0) {
-        directoryState->fileIndex = directoryState->fileCount;
-      }
-      directoryState->fileIndex -= 1;
-    }
-    else lastHandle = fileHandle;
-    
-  } while((lastHandle == 0) && (directoryState->fileCount != 0));
-  
-  if(lastHandle != 0) {
-    t_file_entry* newEntry = directoryState->files + directoryState->fileIndex;
-    
-    LARGE_INTEGER fileSize;
-    GetFileSizeEx(lastHandle, &fileSize);
-    newEntry->size = (u32)fileSize.LowPart;
-    newEntry->data = malloc(newEntry->size);
-    
-    DWORD bytesRead = 0;
-    bool result = ReadFile(lastHandle, newEntry->data, newEntry->size, &bytesRead, 0);
-    assert((u32)bytesRead == newEntry->size);
-    assert(result);
-    
-    CloseHandle(lastHandle);
-  }
-}
-
-internal t_string16 win32_argstring_get_full_path(LPWSTR commandLine) {
-  t_string16 result = {0};
+internal t_string16 win32_get_full_path_from_args(void) {
   int argCount = 0;
-  LPWSTR* args = CommandLineToArgvW(commandLine, &argCount);
-  if(args) {
-    LPWSTR filePath = 0;
-    if(argCount == 1) filePath = args[0];
-    else if(argCount > 1) filePath = args[1];
-    
-    assert(filePath != 0);
-    t_string16 filepathString = char16_to_string16((char16*)filePath);
-    t_string16 fullPath = win32_get_full_path_to_file_mem(filepathString);
-    return(fullPath);
-  }
-  return(result);
+  LPWSTR* args = CommandLineToArgvW(GetCommandLineW(), &argCount);
+  assert(args != 0);
+  
+  t_string16 filePath = {0};
+  if(argCount == 1)     filePath = char16_copy_mem(args[0]);
+  else if(argCount > 1) filePath = char16_copy_mem(args[1]);
+  assert(filePath.ptr != 0);
+  assert(filePath.len != 0);
+  
+  t_string16 fullPath = win32_get_full_path_to_file_mem(filePath);
+  win32_remove_trailing_backslash(&fullPath);
+  return(fullPath);
 }
 
 int main(void)
 {
-  LPWSTR commandLine = GetCommandLineW();
-  HINSTANCE instance = GetModuleHandle(0);
+  t_string16 fileToOpen = win32_get_full_path_from_args();
   
-  t_directory_state directoryState = {0};
-  t_string16 baseFilename = win32_argstring_get_full_path(commandLine);
-  // TODO(bumbread): test this more on invalid inputs
-  
-  win32_remove_trailing_backslash(&baseFilename);
-  bool isPathValid = PathFileExistsW(baseFilename.ptr);
+  // TODO(bumbread): remove if not needed
+  bool isPathValid = PathFileExistsW(fileToOpen.ptr);
   if(!isPathValid) {
-    // TODO(bumbread): remove if not needed
     debug_variable_unused(isPathValid);
+    return(1);
   }
-  t_string16 searchPath = win32_make_path_wildcard_mem(baseFilename);
   
-  WIN32_FIND_DATAW findData;
-  HANDLE searchHandle = FindFirstFileExW((LPWSTR)searchPath.ptr,
-                                         FindExInfoBasic,
-                                         &findData,
-                                         FindExSearchNameMatch, 
-                                         0, FIND_FIRST_EX_LARGE_FETCH|FIND_FIRST_EX_ON_DISK_ENTRIES_ONLY);
-  if(searchHandle == INVALID_HANDLE_VALUE) {
-    FindClose(searchHandle);
+  {
+    HINSTANCE instance = GetModuleHandle(0);
+    WNDCLASSEXW windowClass = {0};
+    windowClass.cbSize = sizeof(WNDCLASSEXW);
+    windowClass.style = CS_HREDRAW | CS_VREDRAW;
+    windowClass.lpfnWndProc = window_proc;
+    windowClass.hInstance = instance;
+    windowClass.lpszClassName = L"imgvu_window_class";
+    
+    RegisterClassExW(&windowClass);
+    global_window.handle= CreateWindowExW(0, windowClass.lpszClassName, L"imgvu", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+                                          CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+                                          0, 0, instance, 0);
+    assert(global_window.handle);
+    ShowWindow(global_window.handle, SW_SHOWDEFAULT);
   }
-  else {
-    loop {
-      t_string16 filename = char16_to_string16((char16*)findData.cFileName);
-      t_string16 fullPath = win32_get_full_path_to_file_mem(filename);
-      bool isDirectory = findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
-      if(!isDirectory) {
-        t_file_entry fileEntry;
-        fileEntry.filename = fullPath;
-        fileEntry.extension = win32_get_file_extension(fullPath);
-        win32_add_file_entry(&directoryState, fileEntry);
-      }
-      
-      bool nextFileFound = FindNextFileW(searchHandle, &findData);
-      if(!nextFileFound) break;
-    }
-  }
-  free(searchPath.ptr);
   
-  WNDCLASSEXW windowClass = {
-    .cbSize = sizeof(WNDCLASSEXW),
-    .style = CS_HREDRAW | CS_VREDRAW,
-    .lpfnWndProc = window_proc,
-    .hInstance = instance,
-    .lpszClassName = L"imgvu_window_class"
-  };
-  RegisterClassExW(&windowClass);
-  global_window.handle= CreateWindowExW(0, windowClass.lpszClassName, L"imgvu", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-                                        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                                        0, 0, instance, 0);
-  assert(global_window.handle);
-  ShowWindow(global_window.handle, SW_SHOWDEFAULT);
   HDC deviceContext = GetDC(global_window.handle);
-  
   global_running = true;
+  
+  r32 dt = 0;
   loop {
-    
-    MSG message;
-    while(PeekMessageW(&message, global_window.handle, 0, 0, PM_REMOVE)) {
-      TranslateMessage(&message);
-      DispatchMessageW(&message);
+    {
+      MSG message;
+      while(PeekMessageW(&message, global_window.handle, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&message);
+        DispatchMessageW(&message);
+      }
+      if(!global_running) break;
     }
-    if(!global_running) break;
     
-    r32 dt = 0;
-    bool exit = update_app(global_keyboard, &global_programState, &directoryState, dt);
-    if(exit) break;
-    
-    win32_draw_app(&global_programState, &global_window, deviceContext);
+    if(app_update(global_keyboard, dt)) break;
+    win32_draw_app(&global_window, deviceContext);
     
     for(u32 keyIndex = 0; keyIndex < KEYBOARD_SIZE; keyIndex += 1) {
       global_keyboard[keyIndex].pressed = false;
