@@ -8,4 +8,10 @@ struct {
   void* ptr;
 } typedef t_data;
 
+struct {
+  u32 width;
+  u32 height;
+  u32* pixels;
+} typedef t_image;
+
 #endif //PLATFORM_H
