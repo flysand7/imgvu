@@ -20,7 +20,7 @@ set output_file_name=imgvu
 set mode=%debug%
 set platform=%windows%
 set input_file_name=imgvu_windows.c
-set compiler=clang
+set compiler=msvc
 set lnk_libs=kernel32.lib user32.lib gdi32.lib shell32.lib shlwapi.lib
 
 REM =================
@@ -36,7 +36,8 @@ set common_flags=%mode% %defines% -nologo -FC -Wall -WX -TC -Ob1 -Oi -EHa -c -Zp
 set msvc_flags=%common_flags% -Qspectre -Zf ^
 	-Fe"%output_file_name%.exe"^
 	-Fo"%output_file_name%.obj"^
-	-Fd"%output_file_name%.pdb"
+	-Fd"%output_file_name%.pdb"^
+	-U__cplusplus
 	
 set clang_flags=%common_flags%^
 	-showFilenames -fdiagnostics-absolute-paths^
@@ -63,12 +64,12 @@ if %compiler%==%compiler_clang% (
 	
 	REM COMPILING WITH MSVC, CHECKING IF COMPILES WITH CLANG
 	echo ^>^>^> msvc compile...
-	cl %msvc_flags% %msvc_dwarnings% src\main.c
+	cl %msvc_flags% %msvc_dwarnings% "src\%input_file_name%"
 	echo ^>^>^> link...
 	link %lnk_flags%
 	
 	echo ^>^>^> clang compile...
-	clang-cl %clang_flags% %clang_dwarnings% src\main.c
+	clang-cl %clang_flags% %clang_dwarnings% "src\%input_file_name%"
 
 ) else (
 	echo unknown compiler specified
