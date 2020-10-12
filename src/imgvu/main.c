@@ -21,9 +21,9 @@
 // 
 
 
-internal bool app_update(t_button* keyboard, 
-                         r32 dt) {
+internal bool app_update(t_button* keyboard, r32 dt) {
   if(keyboard[VKEY_ESCAPE].pressed) return(true);
+  debug_variable_unused(dt);
   
   return(false);
 }

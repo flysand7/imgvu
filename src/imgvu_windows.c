@@ -29,6 +29,17 @@ struct {
   u32* pixels;
 } typedef t_window;
 
+struct {
+  
+  t_string16 dirPath;
+  t_string16 dirSearchPath;
+  
+  u32 fileCount;
+  u32 filesAllocated;
+  t_string16* names;
+  t_data* data;
+} typedef t_directory_state;
+
 internal void
 resize_window(t_window* window, u32 newClientWidth, u32 newClientHeight) {
   if((newClientWidth != window->clientWidth) 
@@ -128,6 +139,76 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
   return(0);
 }
 
+internal void directory_add(t_directory_state* state, t_string16 filename) {
+  if(state->fileCount + 1 > state->filesAllocated) {
+    state->filesAllocated *= 2;
+    if(state->filesAllocated == 0) state->filesAllocated = 1;
+    state->names = (t_string16*)realloc(state->names, state->filesAllocated * sizeof(t_string16));
+    state->data = (t_data*)realloc(state->data, state->filesAllocated * sizeof(t_data));
+  }
+  // TODO(bumbread): chose index based 
+  // on sorting constraints
+  u32 newIndex = state->fileCount;
+  state->names[newIndex] = filename;
+  state->data[newIndex].size = 0;
+  state->data[newIndex].ptr = 0;
+  state->fileCount += 1;
+}
+
+internal void directory_clear(t_directory_state* state) {
+  for(u32 file = 0; file < state->fileCount; file += 1) {
+    t_string16* name = state->names + file;
+    assert(name != 0);
+    free(name->ptr);
+    name->len = 0;
+    name->ptr = 0;
+    t_data* currentData = state->data + file;
+    if(currentData->ptr) {
+      free(currentData->ptr);
+      currentData->ptr = 0;
+      currentData->size = 0;
+    }
+  }
+  state->fileCount = 0;
+}
+
+internal void directory_scan(t_directory_state* state) {
+  assert(state->dirPath.ptr);
+  assert(state->dirSearchPath.ptr);
+  assert(state->fileCount == 0);
+  
+  WIN32_FIND_DATAW findData = {0};
+  HANDLE searchHandle = FindFirstFileW((LPCWSTR)state->dirSearchPath.ptr, &findData);
+  if(searchHandle != INVALID_HANDLE_VALUE) {
+    do {
+      
+      t_string16 shortName = char16_count((char16*)findData.cFileName);
+      t_string16 fullName = win32_get_file_path_mem(shortName);
+      directory_add(state, fullName);
+      
+    } while(FindNextFileW(searchHandle, &findData));
+    FindClose(searchHandle);
+  }
+  else {
+    // TODO(bumbread): handle this case
+  }
+}
+
+internal void directory_set(t_directory_state* state, t_string16 path) {
+  if(!string_compare(path, state->dirPath)) {
+    directory_clear(state);
+    
+    assert(state->dirSearchPath.ptr);
+    assert(state->dirPath.ptr);
+    
+    free(state->dirSearchPath.ptr);
+    free(state->dirPath.ptr);
+    state->dirPath = path;
+    state->dirSearchPath = win32_make_path_wildcard_mem(state->dirPath);
+    directory_scan(state);
+  }
+}
+
 internal t_string16 win32_get_full_path_from_args(void) {
   int argCount = 0;
   LPWSTR* args = CommandLineToArgvW(GetCommandLineW(), &argCount);
@@ -139,7 +220,7 @@ internal t_string16 win32_get_full_path_from_args(void) {
   assert(filePath.ptr != 0);
   assert(filePath.len != 0);
   
-  t_string16 fullPath = win32_get_full_path_to_file_mem(filePath);
+  t_string16 fullPath = win32_get_file_path_mem(filePath);
   win32_remove_trailing_backslash(&fullPath);
   return(fullPath);
 }
@@ -153,6 +234,12 @@ int main(void)
   if(!isPathValid) {
     debug_variable_unused(isPathValid);
     return(1);
+  }
+  
+  t_directory_state directoryState = {0};
+  {
+    t_string16 watchDir = win32_get_path_to_file_mem(fileToOpen);
+    directory_set(&directoryState, watchDir);
   }
   
   {

@@ -16,6 +16,14 @@ internal t_string16 char16_copy_mem(char16* string) {
   return(result);
 }
 
+internal t_string16 char16_count(char16* string) {
+  t_string16 result;
+  result.ptr = string;
+  result.len = 0;
+  for(u32 i = 0; string[i] != 0; i += 1) result.len += 1;
+  return(result);
+}
+
 internal bool string_begins_with(t_string16 string, t_string16 sub) {
   if(string.len < sub.len) return(false);
   for(u32 charIndex = 0; charIndex < string.len; charIndex += 1) {
