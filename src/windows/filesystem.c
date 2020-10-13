@@ -1,20 +1,12 @@
 
 internal t_string16 win32_make_path_wildcard_mem(t_string16 fullPath) {
   t_string16 result;
-  result.len = fullPath.len;
-  result.ptr = (char16*)malloc((result.len+2) * sizeof(char16));
-  i32 lastBackSlashPosition = -1;
-  for(u32 charIndex = 0; charIndex < result.len; charIndex += 1) {
-    char16 nextChar = fullPath.ptr[charIndex];
-    result.ptr[charIndex] = nextChar;
-    if(nextChar == L'\\') {
-      lastBackSlashPosition = (i32)charIndex;
-    }
-  }
-  lastBackSlashPosition += 1;
-  result.ptr[lastBackSlashPosition+0] = L'*';
-  result.ptr[lastBackSlashPosition+1] = 0;
-  result.len = (u32)(lastBackSlashPosition + 1);
+  result.len = fullPath.len+2;
+  result.ptr = (char16*)malloc((result.len+1) * sizeof(char16));
+  for(u32 index = 0; index < fullPath.len; index += 1) result.ptr[index] = fullPath.ptr[index];
+  result.ptr[fullPath.len+0] = L'\\';
+  result.ptr[fullPath.len+1] = L'*';
+  result.ptr[fullPath.len+2] = 0;
   return(result);
 }
 
