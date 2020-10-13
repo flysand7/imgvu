@@ -222,11 +222,9 @@ internal void win32_directory_set(t_directory_state* state, t_string16 path) {
   if(!string_compare(path, state->dirPath)) {
     win32_directory_clear(state);
     
-    assert(state->dirSearchPath.ptr);
-    assert(state->dirPath.ptr);
+    if(state->dirSearchPath.ptr) free(state->dirSearchPath.ptr);
+    if(state->dirPath.ptr) free(state->dirPath.ptr);
     
-    free(state->dirSearchPath.ptr);
-    free(state->dirPath.ptr);
     state->dirPath = path;
     state->dirSearchPath = win32_make_path_wildcard_mem(state->dirPath);
     win32_directory_scan(state);
