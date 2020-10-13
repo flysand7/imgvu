@@ -12,7 +12,9 @@ internal t_string16 char16_copy_mem(char16* string) {
   assert(string != 0);
   t_string16 result = {0};
   for(u32 i = 0; string[i] != 0; i += 1) result.len += 1;
-  result.ptr = (char16*)malloc(result.len * sizeof(char16));
+  result.ptr = (char16*)malloc((result.len + 1) * sizeof(char16));
+  for(u32 i = 0; i < result.len; i += 1) result.ptr[i] = string[i];
+  result.ptr[result.len] = 0;
   return(result);
 }
 
