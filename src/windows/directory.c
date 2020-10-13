@@ -187,6 +187,10 @@ internal void win32_directory_scan(t_directory_state* state) {
   assert(state->dirPath.ptr);
   assert(state->dirSearchPath.ptr);
   
+  for(u32 fileIndex = 0; fileIndex < state->fileCount; fileIndex += 1) {
+    state->files[fileIndex].found = false;
+  }
+  
   WIN32_FIND_DATAW findData = {0};
   HANDLE searchHandle = FindFirstFileW((LPCWSTR)state->dirSearchPath.ptr, &findData);
   if(searchHandle != INVALID_HANDLE_VALUE) {
@@ -209,12 +213,8 @@ internal void win32_directory_scan(t_directory_state* state) {
   
   for(u32 fileIndex = 0; fileIndex < state->fileCount;) {
     t_file* file = state->files + fileIndex;
-    if(!file->found) {
-      win32_directory_remove(state, fileIndex);
-    }
-    else {
-      fileIndex += 1;
-    }
+    if(!file->found) win32_directory_remove(state, fileIndex);
+    else fileIndex += 1;
   }
 }
 
