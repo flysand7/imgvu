@@ -118,6 +118,8 @@ internal t_file* win32_directory_add(t_directory_state* state, t_string16 filena
 }
 
 internal void win32_directory_remove(t_directory_state* state, u32 index) {
+  assert(state->fileCount != 0);
+  
   t_file* file = state->files + index;
   win32_free_file(file);
   assert(file->name.ptr);
@@ -132,23 +134,23 @@ internal void win32_directory_remove(t_directory_state* state, u32 index) {
   
   {
     i32 dist = win32_directory_ring_distance(state, index, state->currentFile);
-    u32 absDist = (dist >= 0) ? (u32)(dist) : (u32)(-dist);
-    if(absDist <= state->cacheOffset) {
-      assert(dist != 0);
-      u32 addedIndex = state->currentFile;
-      if(dist > 0) {
-        while(addedIndex < (state->cacheOffset+1)) addedIndex += state->fileCount;
-        addedIndex -= state->cacheOffset;
-        addedIndex -= 1;
+    if(dist != 0 && (1 + 2*state->cacheOffset < state->fileCount)) {
+      u32 absDist = (dist >= 0) ? (u32)(dist) : (u32)(-dist);
+      if(absDist <= state->cacheOffset) {
+        assert(dist != 0);
+        u32 addedIndex = state->currentFile;
+        if(dist > 0) {
+          if(addedIndex < (state->cacheOffset+1)) addedIndex += state->fileCount;
+          addedIndex -= state->cacheOffset+1;
+        }
+        else {
+          addedIndex += state->cacheOffset+1;
+          addedIndex %= state->fileCount;
+        }
+        
+        t_file* cacheInFile = state->files + addedIndex;
+        win32_directory_cache_file(cacheInFile);
       }
-      else {
-        addedIndex += state->cacheOffset;
-        addedIndex += 1;
-        while(addedIndex >= state->fileCount) addedIndex -= state->fileCount;
-      }
-      
-      t_file* cacheInFile = state->files + addedIndex;
-      win32_directory_cache_file(cacheInFile);
     }
   }
   
