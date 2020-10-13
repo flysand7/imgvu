@@ -47,8 +47,8 @@ internal void win32_free_file(t_file* file) {
 }
 
 internal void win32_directory_cache_file(t_file* file) {
-  assert(file->data.ptr != 0);
-  assert(file->image.pixels != 0);
+  assert(file->data.ptr == 0);
+  assert(file->image.pixels == 0);
   HANDLE fileHandle = CreateFileW((LPCWSTR)file->name.ptr, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
   assert(fileHandle != INVALID_HANDLE_VALUE);
   LARGE_INTEGER fileSize;
