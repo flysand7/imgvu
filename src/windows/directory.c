@@ -47,8 +47,26 @@ internal void win32_free_file(t_file* file) {
 }
 
 internal void win32_directory_cache_file(t_file* file) {
-  debug_variable_unused(file);
-  // TODO(bumbread): write the cache in logic here
+  assert(file->data.ptr != 0);
+  assert(file->image.pixels != 0);
+  HANDLE fileHandle = CreateFileW((LPCWSTR)file->name.ptr, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+  assert(fileHandle != INVALID_HANDLE_VALUE);
+  LARGE_INTEGER fileSize;
+  bool result = GetFileSizeEx(fileHandle, &fileSize);
+  assert(result);
+  assert(fileSize.LowPart != 0);
+  void* fileData = malloc((u32)fileSize.LowPart);
+  DWORD bytesRead = 0;
+  result = ReadFile(fileHandle, fileData, fileSize.LowPart, &bytesRead, 0);
+  assert(result);
+  CloseHandle(fileHandle);
+  
+  assert((DWORD)fileSize.LowPart == bytesRead);
+  file->data.ptr = fileData;
+  file->data.size = (u32)fileSize.LowPart;
+  
+  // TODO(bumbread): call application layer's image_read function and
+  // load that data into the file
 }
 
 internal t_file* win32_directory_add(t_directory_state* state, t_string16 filename) {
