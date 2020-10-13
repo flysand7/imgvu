@@ -7,7 +7,6 @@
 #include"imgvu/main.c"
 #include"imgvu/platform.h"
 
-
 // NOTE(bumbread): Windows.h produces shit ton of 
 // warnings starting /W4. I'm disabling them
 #pragma warning(push, 1)
@@ -22,6 +21,7 @@
 
 #include"windows/filesystem.c"
 #include"windows/directory.c"
+
 struct {
   HWND handle;
   u32 clientWidth;
