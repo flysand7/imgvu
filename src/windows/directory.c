@@ -195,15 +195,17 @@ internal void win32_directory_scan(t_directory_state* state) {
   HANDLE searchHandle = FindFirstFileW((LPCWSTR)state->dirSearchPath.ptr, &findData);
   if(searchHandle != INVALID_HANDLE_VALUE) {
     do {
-      t_string16 shortName = char16_count((char16*)findData.cFileName);
-      t_string16 fullName = win32_get_file_path_mem(shortName);
-      
-      t_file* file = win32_directory_find_file(state, fullName);
-      if(file == 0) {
-        file = win32_directory_add(state, fullName);
+      bool isDirectory = ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
+      if(!isDirectory) {
+        t_string16 shortName = char16_count((char16*)findData.cFileName);
+        t_string16 fullName = win32_get_file_path_mem(shortName);
+        t_file* file = win32_directory_find_file(state, fullName);
+        if(file == 0) {
+          file = win32_directory_add(state, fullName);
+        }
+        assert(file != 0);
+        file->found = true;
       }
-      assert(file != 0);
-      file->found = true;
     } while(FindNextFileW(searchHandle, &findData));
     FindClose(searchHandle);
   }
