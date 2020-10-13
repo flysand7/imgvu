@@ -47,6 +47,7 @@ internal void win32_free_file(t_file* file) {
 }
 
 internal void win32_directory_cache_file(t_file* file) {
+  debug_variable_unused(file);
   // TODO(bumbread): write the cache in logic here
 }
 
@@ -80,14 +81,14 @@ internal t_file* win32_directory_add(t_directory_state* state, t_string16 filena
       u32 excludedFile = 0;
       assert(dist != 0);
       if(dist > 0) {
-        if(state->currentFile < state->cacheOffset+1) excludedFile += state->fileCount;
+        while(state->currentFile < state->cacheOffset+1) excludedFile += state->fileCount;
         excludedFile -= state->cacheOffset;
         excludedFile -= 1;
       }
       else {
         excludedFile += state->cacheOffset;
         excludedFile += 1;
-        if(excludedFile >= state->fileCount) excludedFile -= state->fileCount;
+        while(excludedFile >= state->fileCount) excludedFile -= state->fileCount;
       }
       t_file* file = state->files + excludedFile;
       win32_free_file(file);
@@ -119,18 +120,14 @@ internal void win32_directory_remove(t_directory_state* state, u32 index) {
       assert(dist != 0);
       u32 addedIndex = state->currentFile;
       if(dist > 0) {
-        if(addedIndex < (state->cacheOffset+1)) {
-          addedIndex += state->fileCount;
-        }
+        while(addedIndex < (state->cacheOffset+1)) addedIndex += state->fileCount;
         addedIndex -= state->cacheOffset;
         addedIndex -= 1;
       }
       else {
         addedIndex += state->cacheOffset;
         addedIndex += 1;
-        if(addedIndex >= state->fileCount) {
-          addedIndex -= state->fileCount;
-        }
+        while(addedIndex >= state->fileCount) addedIndex -= state->fileCount;
       }
       
       t_file* cacheInFile = state->files + addedIndex;
