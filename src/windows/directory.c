@@ -96,17 +96,15 @@ internal t_file* win32_directory_add(t_directory_state* state, t_string16 filena
     i32 dist = win32_directory_ring_distance(state, newIndex, state->currentFile);
     if((dist != 0) && (1 + 2*state->cacheOffset < state->fileCount)) {
       u32 absDist = (dist >= 0) ? (u32)(dist) : (u32)(-dist);
-      if(absDist <= state->cacheOffset) {
-        u32 excludedFile = 0;
+      if(absDist > state->cacheOffset) {
+        u32 excludedFile = state->currentFile;
         if(dist > 0) {
           if(state->currentFile < state->cacheOffset+1) excludedFile += state->fileCount;
-          excludedFile -= state->cacheOffset;
-          excludedFile -= 1;
+          excludedFile -= state->cacheOffset+1;
         }
         else {
-          excludedFile += state->cacheOffset;
-          excludedFile += 1;
-          if(excludedFile >= state->fileCount) excludedFile -= state->fileCount;
+          excludedFile += state->cacheOffset+1;
+          excludedFile %= state->fileCount;
         }
         t_file* file = state->files + excludedFile;
         win32_free_file(file);
