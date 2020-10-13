@@ -78,12 +78,12 @@ internal t_file* win32_directory_add(t_directory_state* state, t_string16 filena
   // TODO(bumbread): chose index based 
   // on sorting constraints
   u32 newIndex = state->fileCount/2;
-  if(newIndex <= state->currentFile) {
-    state->currentFile += 1;
-  }
   
-  for(u32 index = state->fileCount-1; index >= newIndex+1; index -= 1) {
-    state->files[index] = state->files[index - 1];
+  if(state->fileCount != 0) {
+    if(newIndex <= state->currentFile) state->currentFile += 1;
+    for(u32 index = state->fileCount; index > newIndex; index -= 1) {
+      state->files[index] = state->files[index - 1];
+    }
   }
   
   t_file* newFile = state->files + newIndex;
@@ -94,24 +94,25 @@ internal t_file* win32_directory_add(t_directory_state* state, t_string16 filena
   
   {
     i32 dist = win32_directory_ring_distance(state, newIndex, state->currentFile);
-    u32 absDist = (dist >= 0) ? (u32)(dist) : (u32)(-dist);
-    if(absDist <= state->cacheOffset) {
-      u32 excludedFile = 0;
-      assert(dist != 0);
-      if(dist > 0) {
-        while(state->currentFile < state->cacheOffset+1) excludedFile += state->fileCount;
-        excludedFile -= state->cacheOffset;
-        excludedFile -= 1;
+    if((dist != 0) && (1 + 2*state->cacheOffset < state->fileCount)) {
+      u32 absDist = (dist >= 0) ? (u32)(dist) : (u32)(-dist);
+      if(absDist <= state->cacheOffset) {
+        u32 excludedFile = 0;
+        if(dist > 0) {
+          if(state->currentFile < state->cacheOffset+1) excludedFile += state->fileCount;
+          excludedFile -= state->cacheOffset;
+          excludedFile -= 1;
+        }
+        else {
+          excludedFile += state->cacheOffset;
+          excludedFile += 1;
+          if(excludedFile >= state->fileCount) excludedFile -= state->fileCount;
+        }
+        t_file* file = state->files + excludedFile;
+        win32_free_file(file);
+        
+        win32_directory_cache_file(newFile);
       }
-      else {
-        excludedFile += state->cacheOffset;
-        excludedFile += 1;
-        while(excludedFile >= state->fileCount) excludedFile -= state->fileCount;
-      }
-      t_file* file = state->files + excludedFile;
-      win32_free_file(file);
-      
-      win32_directory_cache_file(newFile);
     }
   }
   
