@@ -4,8 +4,8 @@
 #pragma warning(pop)
 
 #include"imgvu/imgvu.h"
-#include"imgvu/main.c"
 #include"imgvu/platform.h"
+#include"imgvu/main.c"
 
 // NOTE(bumbread): Windows.h produces shit ton of 
 // warnings starting /W4. I'm disabling them
@@ -158,7 +158,7 @@ int main(void)
   t_directory_state directoryState = {0};
   {
     t_string16 watchDir = win32_get_path_to_file_mem(fileToOpen);
-    win32_directory_set(&directoryState, watchDir);
+    platform_directory_set(&directoryState, watchDir);
   }
   
   {
@@ -192,7 +192,7 @@ int main(void)
       if(!global_running) break;
     }
     
-    if(app_update(global_keyboard, dt)) break;
+    if(app_update(&directoryState, global_keyboard, dt)) break;
     win32_draw_app(&global_window, deviceContext);
     
     for(u32 keyIndex = 0; keyIndex < KEYBOARD_SIZE; keyIndex += 1) {

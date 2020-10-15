@@ -14,4 +14,9 @@ struct {
   u32* pixels;
 } typedef t_image;
 
+struct t_directory_state_s;
+internal void platform_directory_set(struct t_directory_state_s* state, t_string16 path);
+internal void platform_directory_next_file(struct t_directory_state_s* state);
+internal void platform_directory_previous_file(struct t_directory_state_s* state);
+
 #endif //PLATFORM_H

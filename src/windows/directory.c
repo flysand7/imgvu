@@ -14,7 +14,7 @@ struct {
   u32* fileIds;
 } typedef t_directory_cache;
 
-struct {
+struct t_directory_state_s {
   t_string16 dirPath;
   t_string16 dirSearchPath;
   
@@ -114,8 +114,7 @@ internal void win32_cache_add(t_directory_state* state, u32 fileIndex) {
     assert((DWORD)fileSize.LowPart == bytesRead);
     file->data.ptr = fileData;
     file->data.size = (u32)fileSize.LowPart;
-    
-    // TODO(bumbread): call teh application layer's decode function
+    file->image = app_decode_file(file->data);
     
     // NOTE(bumbread): updaing the cache
     if(cache->len + 1 > cache->maxLen) {
@@ -284,7 +283,10 @@ internal void win32_directory_scan(t_directory_state* state) {
   }
 }
 
-internal void win32_directory_set(t_directory_state* state, t_string16 path) {
+// NOTE(bumbread): The following are the platform layer API function
+// realisations
+
+internal void platform_directory_set(t_directory_state* state, t_string16 path) {
   if(!string_compare(path, state->dirPath)) {
     win32_directory_clear(state);
     
@@ -298,13 +300,13 @@ internal void win32_directory_set(t_directory_state* state, t_string16 path) {
 }
 
 // TODO(bumbread): handle the case when the file is not found
-internal i32 win32_directory_next_file(t_directory_state* state) {
+internal void platform_directory_next_file(t_directory_state* state) {
   u32 newFileIndex = (state->currentFile+1) % state->fileCount;
   win32_cache_update(state);
   state->currentFile = newFileIndex;
 }
 
-internal i32 win32_directory_previous_file(t_directory_state* state) {
+internal void platform_directory_previous_file(t_directory_state* state) {
   u32 newFileIndex = state->currentFile;
   if(newFileIndex == 0) newFileIndex += state->fileCount;
   newFileIndex -= 1;
