@@ -31,7 +31,7 @@ internal t_string16 win32_get_file_path_mem(t_string16 name) {
   // NOTE(bumbread): reveiving the actual full path
   char16* fullName = (char16*)malloc(receiveLength * sizeof(char16));
   GetFullPathNameW((LPCWSTR)name.ptr, receiveLength, fullName, 0);
-  fullName[receiveLength] = 0;
+  fullName[receiveLength-1] = 0;
   result.len = receiveLength-1;
   result.ptr = fullName;
   return(result);

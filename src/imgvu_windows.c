@@ -200,10 +200,14 @@ int main(void)
     
     if(directoryState.changed) {
       directoryState.changed = false;
-      //static_make_string16(prefix, L"imgvu ");
       t_string16 currentFilename = directoryState.files[directoryState.currentFile].name;
-      //t_string16 title = string_concatenate_mem(prefix, currentFilename);
-      SetWindowTextW(global_window.handle, (LPCWSTR)currentFilename.ptr);
+      if(currentFilename.ptr != 0) {
+        SetWindowTextW(global_window.handle, (LPCWSTR)currentFilename.ptr);
+      }
+      else {
+        static_make_string16(prefix, L"[no file found]");
+        SetWindowTextW(global_window.handle, (LPCWSTR)prefix.ptr);
+      }
     }
     
     for(u32 keyIndex = 0; keyIndex < KEYBOARD_SIZE; keyIndex += 1) {

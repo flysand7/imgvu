@@ -9,6 +9,7 @@ struct {
 } typedef t_data;
 
 struct {
+  bool skip;
   u32 width;
   u32 height;
   u32* pixels;
