@@ -50,6 +50,7 @@ internal void win32_directory_cache_file(t_file* file) {
   assert(file->data.ptr == 0);
   assert(file->image.pixels == 0);
   HANDLE fileHandle = CreateFileW((LPCWSTR)file->name.ptr, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+  // TODO(bumbread): if file not found, remove the file desc from directory
   assert(fileHandle != INVALID_HANDLE_VALUE);
   LARGE_INTEGER fileSize;
   bool result = GetFileSizeEx(fileHandle, &fileSize);
@@ -232,4 +233,49 @@ internal void win32_directory_set(t_directory_state* state, t_string16 path) {
     state->dirSearchPath = win32_make_path_wildcard_mem(state->dirPath);
     win32_directory_scan(state);
   }
+}
+
+// TODO(bumbread): handle the case when the file is not found
+internal i32 win32_directory_next_file(t_directory_state* state) {
+  u32 newFileIndex = (state->currentFile+1) % state->fileCount;
+  
+  {
+    u32 lastFileIndex = state->currentFile;
+    if(lastFileIndex < state->cacheOffset) lastFileIndex += state->fileCount;
+    lastFileIndex -= state->cacheOffset;
+    
+    t_file* fileToUncache = state->files + lastFileIndex;
+    win32_free_file(fileToUncache);
+  }
+  
+  {
+    u32 firstFileIndex = (state->currentFile+state->cacheOffset+1) % state->fileCount;
+    t_file* fileToCache = state->files + firstFileIndex;
+    win32_directory_cache_file(state, fileToCache);
+  }
+  
+  state->currentFile = newFileIndex;
+}
+
+internal i32 win32_directory_previous_file(t_directory_state* state) {
+  u32 newFileIndex = state->currentFile;
+  if(newFileIndex == 0) newFileIndex += state->fileCount;
+  newFileIndex -= 1;
+  
+  {
+    u32 lastFileIndex = state->currentFile;
+    if(lastFileIndex < state->cacheOffset) lastFileIndex += state->fileCount;
+    lastFileIndex -= state->cacheOffset;
+    
+    t_file* fileToCache = state->files + lastFileIndex;
+    win32_directory_cache_file(state, fileToCache);
+  }
+  
+  {
+    u32 firstFileIndex = (state->currentFile+state->cacheOffset+1) % state->fileCount;
+    t_file* fileToUncache = state->files + firstFileIndex;
+    win32_free_file(fileToUncache);
+  }
+  
+  state->currentFile = newFileIndex;
 }
