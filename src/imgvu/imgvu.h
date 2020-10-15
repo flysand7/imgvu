@@ -27,9 +27,16 @@ wchar_t typedef char16;
 #define persist static
 #define loop for(;;)
 
+#ifdef MODE_DEBUG
 #define assert(x) do { if(!(x)) { __debugbreak(); } } while(0)
-#define array_length(a) (sizeof(a) / sizeof((a)[0]))
 #define debug_variable_unused(lvalue_) do{{void* tmp=&(lvalue_);tmp = 0;}}while(0)
+#else
+#define assert(x) 
+#define debug_variable_unused(lvalue_) 
+#endif
+
+#define array_length(a) (sizeof(a) / sizeof((a)[0]))
+
 
 #include"string.c"
 #include"input.h"
