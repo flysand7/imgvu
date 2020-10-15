@@ -19,7 +19,8 @@ REM =================
 REM COMPILATION SETUP
 REM =================
 
-set cmp_flags=%mode% %defines% -nologo -FC -Wall -WX -TC -Ob1 -Oi -EHa -c -Zp4 -Qspectre -wd5045
+set warnings=-w34191 -w44242 -w44254 -w44255 -w44288
+set cmp_flags=%mode% %defines% -nologo -FC -Wall -WX -TC -Ob1 -Oi -EHa -c -Zp4 -Qspectre -wd5045 %warnings%
 set cmp_flags=%cmp_flags% -Qspectre -Zf
 
 set cmp_flags=%cmp_flags% -Fe"%output_file_name%.exe"

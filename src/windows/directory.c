@@ -26,6 +26,7 @@ struct {
   t_file* files;
 } typedef t_directory_state;
 
+// TODO(bumbread): some of the methods operating on directories should be up in the platform layer
 internal i32 win32_directory_ring_distance(t_directory_state* state, u32 start, u32 end) {
   i32 distance = (i32)end - (i32)start;
   i32 sign = distance >= 0 ? 1 : -1;
