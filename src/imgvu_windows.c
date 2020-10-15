@@ -38,7 +38,7 @@ resize_window(t_window* window, u32 newClientWidth, u32 newClientHeight) {
     if(window->pixels) {
       free(window->pixels);
     }
-    window->pixels = (u32*)malloc(window->clientWidth * window->clientHeight * sizeof(u32));
+    window->pixels = malloc(window->clientWidth * window->clientHeight * sizeof(u32));
   }
 }
 

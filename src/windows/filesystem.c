@@ -2,7 +2,7 @@
 internal t_string16 win32_make_path_wildcard_mem(t_string16 fullPath) {
   t_string16 result;
   result.len = fullPath.len+2;
-  result.ptr = (char16*)malloc((result.len+1) * sizeof(char16));
+  result.ptr = malloc((result.len+1) * sizeof(char16));
   for(u32 index = 0; index < fullPath.len; index += 1) result.ptr[index] = fullPath.ptr[index];
   result.ptr[fullPath.len+0] = L'\\';
   result.ptr[fullPath.len+1] = L'*';
@@ -29,7 +29,7 @@ internal t_string16 win32_get_file_path_mem(t_string16 name) {
     return(result);
   }
   // NOTE(bumbread): reveiving the actual full path
-  char16* fullName = (char16*)malloc(receiveLength * sizeof(char16));
+  char16* fullName = malloc(receiveLength * sizeof(char16));
   GetFullPathNameW((LPCWSTR)name.ptr, receiveLength, fullName, 0);
   fullName[receiveLength-1] = 0;
   result.len = receiveLength-1;
@@ -68,7 +68,7 @@ internal t_string16 win32_get_path_to_file_mem(t_string16 fullPath) {
   win32_remove_trailing_backslash(&fullPath);
   
   t_string16 result;
-  result.ptr = (char16*)malloc(fullPath.len);
+  result.ptr = malloc(fullPath.len);
   for(u32 i = 0; i < fullPath.len; i += 1) result.ptr[i] = fullPath.ptr[i];
   u32 charIndex = fullPath.len - 1;
   
@@ -98,7 +98,7 @@ internal t_string16 win32_get_dir_level_mem(t_string16 filename, u32 level) {
     }
     result.len += 1;
   }
-  result.ptr = (char16*)malloc((result.len + 1) * sizeof(char16));
+  result.ptr = malloc((result.len + 1) * sizeof(char16));
   for(u32 charIndex = 0; charIndex < result.len; charIndex += 1) {
     result.ptr[charIndex] = filename.ptr[charIndex];
   }
