@@ -158,6 +158,7 @@ int main(void)
   }
   
   t_directory_state directoryState = {0};
+  directoryState.changed = true;
   {
     t_string16 watchDir = win32_get_path_to_file_mem(fileToOpen);
     platform_directory_set(&directoryState, watchDir);
@@ -196,6 +197,14 @@ int main(void)
     
     if(app_update(&directoryState, global_keyboard, dt)) break;
     win32_draw_app(&global_window, deviceContext);
+    
+    if(directoryState.changed) {
+      directoryState.changed = false;
+      //static_make_string16(prefix, L"imgvu ");
+      t_string16 currentFilename = directoryState.files[directoryState.currentFile].name;
+      //t_string16 title = string_concatenate_mem(prefix, currentFilename);
+      SetWindowTextW(global_window.handle, (LPCWSTR)currentFilename.ptr);
+    }
     
     for(u32 keyIndex = 0; keyIndex < KEYBOARD_SIZE; keyIndex += 1) {
       global_keyboard[keyIndex].pressed = false;

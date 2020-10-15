@@ -17,6 +17,8 @@ struct t_directory_state_s {
   u32 fileCount;
   u32 filesAllocated;
   t_file* files;
+  
+  bool changed;
 } typedef t_directory_state;
 
 // TODO(bumbread): some of the methods operating on directories should be up in the platform layer
@@ -285,14 +287,20 @@ internal void platform_directory_set(t_directory_state* state, t_string16 path) 
 // TODO(bumbread): handle the case when the file is not found
 internal void platform_directory_next_file(t_directory_state* state) {
   u32 newFileIndex = (state->currentFile+1) % state->fileCount;
-  win32_cache_update(state);
-  state->currentFile = newFileIndex;
+  if(newFileIndex != state->currentFile) {
+    win32_cache_update(state);
+    state->currentFile = newFileIndex;
+    state->changed = true;
+  }
 }
 
 internal void platform_directory_previous_file(t_directory_state* state) {
   u32 newFileIndex = state->currentFile;
   if(newFileIndex == 0) newFileIndex += state->fileCount;
   newFileIndex -= 1;
-  win32_cache_update(state);
-  state->currentFile = newFileIndex;
+  if(newFileIndex != state->currentFile) {
+    win32_cache_update(state);
+    state->currentFile = newFileIndex;
+    state->changed = true;
+  }
 }
