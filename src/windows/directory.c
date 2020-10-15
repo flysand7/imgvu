@@ -114,6 +114,8 @@ internal void win32_cache_add(t_directory_state* state, u32 fileIndex) {
     file->data.ptr = fileData;
     file->data.size = (u32)fileSize.LowPart;
     
+    // TODO(bumbread): call teh application layer's decode function
+    
     // NOTE(bumbread): updaing the cache
     if(cache->len + 1 > cache->maxLen) {
       cache->maxLen *= 2;
