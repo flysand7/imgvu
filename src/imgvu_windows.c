@@ -156,7 +156,6 @@ int main(void)
   }
   
   t_directory_state directoryState = {0};
-  directoryState.cacheOffset = 1;
   {
     t_string16 watchDir = win32_get_path_to_file_mem(fileToOpen);
     win32_directory_set(&directoryState, watchDir);

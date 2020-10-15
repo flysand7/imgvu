@@ -3,16 +3,24 @@ struct {
   t_string16 name;
   t_data data;
   t_image image;
+  
   bool found;
+  u32 cacheLoads;
 } typedef t_file;
+
+struct {
+  u32 maxLen;
+  u32 len;
+  u32* fileIds;
+} typedef t_directory_cache;
 
 struct {
   t_string16 dirPath;
   t_string16 dirSearchPath;
   
-  u32 cacheOffset;
-  u32 currentFile;
+  t_directory_cache cache;
   
+  u32 currentFile;
   u32 fileCount;
   u32 filesAllocated;
   t_file* files;
@@ -33,41 +41,125 @@ internal i32 win32_directory_ring_distance(t_directory_state* state, u32 start, 
 }
 
 internal void win32_free_file(t_file* file) {
-  if(file->data.ptr) {
-    free(file->data.ptr);
-    file->data.ptr = 0;
-    file->data.size = 0;
+  assert(file->data.ptr);
+  assert(file->image.pixels);
+  
+  free(file->data.ptr);
+  file->data.ptr = 0;
+  file->data.size = 0;
+  free(file->image.pixels);
+  file->image.pixels = 0;
+  file->image.width = 0;
+  file->image.height = 0;
+}
+
+internal void win32_cache_clear(t_directory_state* state) {
+  t_directory_cache* cache = &state->cache;
+  for(u32 cacheIndex = 0; cacheIndex < cache->len; cacheIndex += 1) {
+    u32 fileId = cache->fileIds[cacheIndex];
+    win32_free_file(state->files + fileId);
+    cache->fileIds[cacheIndex]= 0;
   }
-  if(file->image.pixels) {
-    free(file->image.pixels);
-    file->image.pixels = 0;
-    file->image.width = 0;
-    file->image.height = 0;
+  cache->len = 0;
+}
+
+// NOTE(bumbread): caching policy:
+//
+// A file is cached if and only if:
+//  it is next to the current file in the directory
+//  it is frequently used (4*freq > max)
+
+internal bool win32_cache_is_frequent_enough(u32 cacheLoads, u32 maxCacheLoads) {
+  return(4*cacheLoads > maxCacheLoads);
+}
+
+internal inline bool dist(u32 a, u32 b) {
+  i32 diff = (i32)a - (i32)b;
+  return((diff > 0) ? (diff) : (-diff));
+}
+
+internal bool win32_cache_contains(t_directory_cache* cache, u32 fileIndex) {
+  for(u32 cacheIndex = 0; cacheIndex < cache->len; cacheIndex += 1) {
+    if(fileIndex == cache->fileIds[cacheIndex]) {
+      return(true);
+    }
+  }
+  return(false);
+}
+
+internal void win32_cache_add(t_directory_state* state, u32 fileIndex) {
+  t_directory_cache* cache = &state->cache;
+  if(!win32_cache_contains(cache, fileIndex)) {
+    
+    // NOTE(bumbread): loading the cache
+    t_file* file = state->files + fileIndex;
+    assert(file->data.ptr == 0);
+    assert(file->image.pixels == 0);
+    
+    HANDLE fileHandle = CreateFileW((LPCWSTR)file->name.ptr, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+    // TODO(bumbread): if file not found, remove the file desc from directory
+    assert(fileHandle != INVALID_HANDLE_VALUE);
+    
+    LARGE_INTEGER fileSize;
+    bool result = GetFileSizeEx(fileHandle, &fileSize);
+    assert(result);
+    assert(fileSize.LowPart != 0);
+    void* fileData = malloc((u32)fileSize.LowPart);
+    DWORD bytesRead = 0;
+    
+    result = ReadFile(fileHandle, fileData, fileSize.LowPart, &bytesRead, 0);
+    assert(result);
+    CloseHandle(fileHandle);
+    assert((DWORD)fileSize.LowPart == bytesRead);
+    file->data.ptr = fileData;
+    file->data.size = (u32)fileSize.LowPart;
+    
+    // NOTE(bumbread): updaing the cache
+    if(cache->len + 1 > cache->maxLen) {
+      cache->maxLen *= 2;
+      if(cache->maxLen == 0) cache->maxLen = 1;
+      cache->fileIds = realloc(cache->fileIds, cache->maxLen * sizeof(u32));
+    }
+    cache->fileIds[cache->len] = fileIndex;
+    cache->len += 1;
+    state->files[fileIndex].cacheLoads += 1;
   }
 }
 
-internal void win32_directory_cache_file(t_file* file) {
-  assert(file->data.ptr == 0);
-  assert(file->image.pixels == 0);
-  HANDLE fileHandle = CreateFileW((LPCWSTR)file->name.ptr, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
-  // TODO(bumbread): if file not found, remove the file desc from directory
-  assert(fileHandle != INVALID_HANDLE_VALUE);
-  LARGE_INTEGER fileSize;
-  bool result = GetFileSizeEx(fileHandle, &fileSize);
-  assert(result);
-  assert(fileSize.LowPart != 0);
-  void* fileData = malloc((u32)fileSize.LowPart);
-  DWORD bytesRead = 0;
-  result = ReadFile(fileHandle, fileData, fileSize.LowPart, &bytesRead, 0);
-  assert(result);
-  CloseHandle(fileHandle);
+internal void win32_cache_remove(t_directory_state* state, u32 fileIndex) {
+  t_directory_cache* cache = &state->cache;
+  t_file* currentFile = state->files + cache->fileIds[fileIndex];
+  win32_free_file(currentFile);
+  for(u32 cacheIndex = fileIndex; cacheIndex < cache->len; cacheIndex -= 1) {
+    cache->fileIds[cacheIndex] = cache->fileIds[cacheIndex + 1];
+  }
+}
+
+internal void win32_cache_update(t_directory_state* state) {
+  u32 maxCacheLoads = 0;
+  for(u32 fileIndex = 0; fileIndex < state->fileCount; fileIndex += 1) {
+    u32 currentCacheLoads = state->files[fileIndex].cacheLoads;
+    if(currentCacheLoads > maxCacheLoads) maxCacheLoads = currentCacheLoads;
+  }
   
-  assert((DWORD)fileSize.LowPart == bytesRead);
-  file->data.ptr = fileData;
-  file->data.size = (u32)fileSize.LowPart;
-  
-  // TODO(bumbread): call application layer's image_read function and
-  // load that data into the file
+  for(u32 fileIndex = 0; fileIndex < state->fileCount; fileIndex += 1) {
+    u32 currentCacheLoads = state->files[fileIndex].cacheLoads;
+    if(win32_cache_is_frequent_enough(currentCacheLoads, maxCacheLoads)) {
+      win32_cache_add(state, fileIndex);
+    }
+    else {
+      if(dist(fileIndex, state->currentFile) > 1) {
+        win32_cache_remove(state, fileIndex);
+      }
+    }
+  }
+}
+
+internal bool win32_cache_request_add(t_directory_state* state, u32 fileIndex) {
+  if(dist(fileIndex, state->currentFile) <= 1) {
+    win32_cache_add(state, fileIndex);
+  }
+  return(false);
 }
 
 internal t_file* win32_directory_add(t_directory_state* state, t_string16 filename) {
@@ -93,28 +185,7 @@ internal t_file* win32_directory_add(t_directory_state* state, t_string16 filena
   *newFile = emptyFile;
   state->fileCount += 1;
   
-  {
-    i32 dist = win32_directory_ring_distance(state, newIndex, state->currentFile);
-    if((dist != 0) && (1 + 2*state->cacheOffset < state->fileCount)) {
-      u32 absDist = (dist >= 0) ? (u32)(dist) : (u32)(-dist);
-      if(absDist > state->cacheOffset) {
-        u32 excludedFile = state->currentFile;
-        if(dist > 0) {
-          if(state->currentFile < state->cacheOffset+1) excludedFile += state->fileCount;
-          excludedFile -= state->cacheOffset+1;
-        }
-        else {
-          excludedFile += state->cacheOffset+1;
-          excludedFile %= state->fileCount;
-        }
-        t_file* file = state->files + excludedFile;
-        win32_free_file(file);
-        
-        win32_directory_cache_file(newFile);
-      }
-    }
-  }
-  
+  win32_cache_request_add(state, newIndex);
   return(newFile);
 }
 
@@ -127,33 +198,15 @@ internal void win32_directory_remove(t_directory_state* state, u32 index) {
   free(file->name.ptr);
   file->name.ptr = 0;
   file->name.len = 0;
+  file->cacheLoads = 0;
+  file->found = false;
   
   if(index < state->currentFile) {
     if(state->currentFile == 0) state->currentFile += state->fileCount;
     state->currentFile -= 1;
   }
   
-  {
-    i32 dist = win32_directory_ring_distance(state, index, state->currentFile);
-    if(dist != 0 && (1 + 2*state->cacheOffset < state->fileCount)) {
-      u32 absDist = (dist >= 0) ? (u32)(dist) : (u32)(-dist);
-      if(absDist <= state->cacheOffset) {
-        assert(dist != 0);
-        u32 addedIndex = state->currentFile;
-        if(dist > 0) {
-          if(addedIndex < (state->cacheOffset+1)) addedIndex += state->fileCount;
-          addedIndex -= state->cacheOffset+1;
-        }
-        else {
-          addedIndex += state->cacheOffset+1;
-          addedIndex %= state->fileCount;
-        }
-        
-        t_file* cacheInFile = state->files + addedIndex;
-        win32_directory_cache_file(cacheInFile);
-      }
-    }
-  }
+  win32_cache_remove(state, index);
   
   for(u32 fileIndex = index; fileIndex < state->fileCount - 1; fileIndex += 1) {
     state->files[fileIndex] = state->files[fileIndex + 1];
@@ -164,14 +217,15 @@ internal void win32_directory_remove(t_directory_state* state, u32 index) {
 }
 
 internal void win32_directory_clear(t_directory_state* state) {
+  win32_cache_clear(state);
   for(u32 index = 0; index < state->fileCount; index += 1) {
     t_file* file = state->files + index;
     assert(file->name.ptr);
     free(file->name.ptr);
     file->name.ptr = 0;
     file->name.len = 0;
-    
-    win32_free_file(file);
+    file->cacheLoads = 0;
+    file->found = false;
   }
   state->fileCount = 0;
 }
@@ -217,8 +271,13 @@ internal void win32_directory_scan(t_directory_state* state) {
   
   for(u32 fileIndex = 0; fileIndex < state->fileCount;) {
     t_file* file = state->files + fileIndex;
-    if(!file->found) win32_directory_remove(state, fileIndex);
-    else fileIndex += 1;
+    if(!file->found) {
+      win32_directory_remove(state, fileIndex);
+    }
+    else {
+      win32_cache_request_add(state, fileIndex);
+      fileIndex += 1;
+    }
   }
 }
 
@@ -238,22 +297,7 @@ internal void win32_directory_set(t_directory_state* state, t_string16 path) {
 // TODO(bumbread): handle the case when the file is not found
 internal i32 win32_directory_next_file(t_directory_state* state) {
   u32 newFileIndex = (state->currentFile+1) % state->fileCount;
-  
-  {
-    u32 lastFileIndex = state->currentFile;
-    if(lastFileIndex < state->cacheOffset) lastFileIndex += state->fileCount;
-    lastFileIndex -= state->cacheOffset;
-    
-    t_file* fileToUncache = state->files + lastFileIndex;
-    win32_free_file(fileToUncache);
-  }
-  
-  {
-    u32 firstFileIndex = (state->currentFile+state->cacheOffset+1) % state->fileCount;
-    t_file* fileToCache = state->files + firstFileIndex;
-    win32_directory_cache_file(state, fileToCache);
-  }
-  
+  win32_cache_update(state);
   state->currentFile = newFileIndex;
 }
 
@@ -261,21 +305,6 @@ internal i32 win32_directory_previous_file(t_directory_state* state) {
   u32 newFileIndex = state->currentFile;
   if(newFileIndex == 0) newFileIndex += state->fileCount;
   newFileIndex -= 1;
-  
-  {
-    u32 lastFileIndex = state->currentFile;
-    if(lastFileIndex < state->cacheOffset) lastFileIndex += state->fileCount;
-    lastFileIndex -= state->cacheOffset;
-    
-    t_file* fileToCache = state->files + lastFileIndex;
-    win32_directory_cache_file(state, fileToCache);
-  }
-  
-  {
-    u32 firstFileIndex = (state->currentFile+state->cacheOffset+1) % state->fileCount;
-    t_file* fileToUncache = state->files + firstFileIndex;
-    win32_free_file(fileToUncache);
-  }
-  
+  win32_cache_update(state);
   state->currentFile = newFileIndex;
 }
