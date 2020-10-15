@@ -144,6 +144,8 @@ internal t_string16 win32_get_full_path_from_args(void) {
   return(fullPath);
 }
 
+// TODO(bumbread): natively support alt+f4 way of closing. probably also add alt+enter for fullscreen,
+// TODO(bumbread): and also add fullscreen support, yeah!
 int main(void)
 {
   t_string16 fileToOpen = win32_get_full_path_from_args();
