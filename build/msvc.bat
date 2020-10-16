@@ -1,7 +1,7 @@
 @echo off
 
 REM DEBUG OR RELEASE
-set debug=-Z7 -Od -MTd -DMODE_DEBUG
+set debug=-Z7 -Zf -Od -MTd -DMODE_DEBUG
 set release=-O2 -MT
 
 REM ================
@@ -21,7 +21,7 @@ REM =================
 
 set warnings=-w34191 -w44242 -w44254 -w44255 -w44288
 set cmp_flags=%mode% %defines% -nologo -FC -Wall -WX -TC -Ob1 -Oi -EHa -c -Zp4 -wd5045 %warnings%
-set cmp_flags=%cmp_flags% -Zf -Qspectre
+set cmp_flags=%cmp_flags% -Qspectre
 
 set cmp_flags=%cmp_flags% -Fe"%output_file_name%.exe"
 set cmp_flags=%cmp_flags% -Fo"%output_file_name%.obj"
