@@ -11,11 +11,12 @@ struct {
   u32 bitmapSize;
   u32 reserved;
   u32 offset;
+  
   u32 infoHeaderSize;
   i32 width;
   i32 height;
-  u32 bitsPerPixel;
   u16 planes;
+  u16 bitsPerPixel;
   u32 compression;
   u32 imageSize;
   u32 h_pixelsPerMeter;
@@ -56,10 +57,10 @@ internal bool try_parse_bmp(t_image_data* file, t_image* result) {
           
           u32* targetRow = result->pixels;
           byte* pixelRow = stream + bitmapHeader->offset;
-          for(u32 column = 0; column < imageWidth; column += 1) {
+          for(u32 row = 0; row < imageHeight; row += 1) {
             byte* channel = pixelRow;
             u32* targetPixel = targetRow;
-            for(u32 row = 0; row < imageHeight; row += 1) {
+            for(u32 column = 0; column < imageWidth; column += 1) {
               u32 r = *channel; channel += 1;
               u32 g = *channel; channel += 1;
               u32 b = *channel; channel += 1;
