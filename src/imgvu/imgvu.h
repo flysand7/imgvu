@@ -55,18 +55,34 @@ struct {
   u32* pixels;
 } typedef t_image;
 
+struct {
+  r32 posX;
+  r32 posY;
+  r32 scale;
+  r32 angle; // in radians!
+  bool flippedX;
+  bool flippedY;
+  // NOTE(bumbread): transformation order
+  // flip -> rotate -> scale -> translate
+} typedef t_location;
+
 struct t_directory_state_s;
 internal void platform_directory_set(struct t_directory_state_s* state, t_string16 path);
 internal void platform_directory_next_file(struct t_directory_state_s* state);
 internal void platform_directory_previous_file(struct t_directory_state_s* state);
 
+internal t_image* platform_get_current_image(struct t_directory_state_s* dirState);
+internal void platform_draw_image(t_location* loc, t_image* image);
+
 // NOTE(bumbread): The services the app provides to the platform layer.
 
 struct {
-  int _stub;
+  bool initialized;
+  struct t_directory_state_s* dirState;
+  t_location imageLocation;
 } typedef t_app_state;
 
-internal bool app_update(struct t_directory_state_s* state, t_button* keyboard, r32 dt);
+internal bool app_update(t_app_state* appState, struct t_directory_state_s* state, t_button* keyboard, r32 dt);
 internal void app_draw(t_app_state* state);
 
 // NOTE(bumbread): the application interface realisation

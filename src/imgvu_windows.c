@@ -74,6 +74,58 @@ win32_draw_app(t_window* window, HDC deviceContext) {
   paint_window_gdi(window, deviceContext);
 }
 
+internal void platform_draw_image(t_location* loc, t_image* image) {
+  i32 maxWidth = (i32)global_window.clientWidth;
+  i32 maxHeight = (i32)global_window.clientHeight;
+  
+  i32 xPosition = (i32)loc->posX;
+  i32 yPosition = (i32)loc->posY;
+  i32 width = (i32)image->width;
+  i32 height = (i32)image->height;
+  
+  if(xPosition < 0) { 
+    width += xPosition;
+    xPosition = 0;
+  }
+  if(yPosition < 0) {
+    height += yPosition;
+    yPosition = 0;
+  }
+  if(xPosition + width > maxWidth) {
+    i32 over = xPosition + width - maxWidth;
+    assert(over > 0);
+    width -= over;
+  }
+  if(yPosition + height > maxHeight) {
+    i32 over = yPosition + height - maxHeight;
+    assert(over > 0);
+    height -= over;
+  }
+  if(xPosition >= maxWidth) return;
+  if(yPosition >= maxHeight) return;
+  if(xPosition + maxWidth <= 0) return;
+  if(yPosition + maxHeight <= 0) return;
+  
+  assert(xPosition > 0);
+  assert(yPosition > 0);
+  assert(xPosition + width <= maxWidth);
+  assert(yPosition + height <= maxHeight);
+  
+  u32* targetRow = global_window.pixels + (u32)yPosition*global_window.clientWidth + (u32)xPosition;
+  u32* sourceRow = image->pixels;
+  for(i32 column = 0; column < width; column += 1) {
+    u32* targetPixel = targetRow;
+    u32* sourcePixel = sourceRow;
+    for(i32 row = 0; row < height; row += 1) {
+      *targetPixel = *sourcePixel;
+      targetPixel += 1;
+      sourcePixel += 1;
+    }
+    sourceRow += image->width;
+    targetRow += global_window.clientWidth;
+  }
+}
+
 #define get_bit(num, bit) ( ((num) >> (bit)) & 1)
 internal LRESULT CALLBACK 
 window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
@@ -194,7 +246,7 @@ int main(void)
       if(!global_running) break;
     }
     
-    if(app_update(&directoryState, global_keyboard, dt)) break;
+    if(app_update(&global_app_state, &directoryState, global_keyboard, dt)) break;
     win32_draw_app(&global_window, deviceContext);
     
     if(directoryState.changed) {
