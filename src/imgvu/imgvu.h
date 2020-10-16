@@ -39,7 +39,28 @@ wchar_t typedef char16;
 
 #include"string.c"
 #include"input.h"
-#include"platform.h"
+
+// NOTE(bumbread): The services platform layer provides to the app.
+
+struct {
+  t_string16 filename;
+  u64 size;
+  void* ptr;
+} typedef t_image_data;
+
+struct {
+  bool skip;
+  u32 width;
+  u32 height;
+  u32* pixels;
+} typedef t_image;
+
+struct t_directory_state_s;
+internal void platform_directory_set(struct t_directory_state_s* state, t_string16 path);
+internal void platform_directory_next_file(struct t_directory_state_s* state);
+internal void platform_directory_previous_file(struct t_directory_state_s* state);
+
+// NOTE(bumbread): The services the app provides to the platform layer.
 
 struct {
   int _stub;
@@ -47,6 +68,8 @@ struct {
 
 internal bool app_update(struct t_directory_state_s* state, t_button* keyboard, r32 dt);
 internal void app_draw(t_app_state* state);
+
+// NOTE(bumbread): the application interface realisation
 
 #include"main.c"
 
