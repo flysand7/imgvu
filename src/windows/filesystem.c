@@ -48,7 +48,7 @@ internal t_string16 win32_get_path_to_file_mem(t_string16 fullPath) {
   win32_remove_trailing_backslash(&fullPath);
   
   t_string16 result;
-  result.ptr = malloc(fullPath.len);
+  result.ptr = malloc(fullPath.len * sizeof(char16));
   for(u32 i = 0; i < fullPath.len; i += 1) result.ptr[i] = fullPath.ptr[i];
   u32 charIndex = fullPath.len - 1;
   
