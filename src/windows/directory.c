@@ -1,7 +1,6 @@
 
 struct {
-  t_string16 name;
-  t_data data;
+  t_image_data data;
   t_image image;
   
   bool found;
@@ -90,10 +89,10 @@ internal void win32_directory_remove(t_directory_state* state, u32 index) {
   
   t_file* file = state->files + index;
   win32_cache_remove(state, index);
-  assert(file->name.ptr);
-  free(file->name.ptr);
-  file->name.ptr = 0;
-  file->name.len = 0;
+  assert(file->data.filename.ptr);
+  free(file->data.filename.ptr);
+  file->data.filename.ptr = 0;
+  file->data.filename.len = 0;
   file->cacheLoads = 0;
   file->found = false;
   
@@ -119,7 +118,7 @@ internal bool win32_cache_add(t_directory_state* state, u32 fileIndex) {
   assert(file->image.pixels == 0);
   
   // NOTE(bumbread): loading into the cache
-  HANDLE fileHandle = CreateFileW((LPCWSTR)file->name.ptr, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+  HANDLE fileHandle = CreateFileW((LPCWSTR)file->data.filename.ptr, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
   if(fileHandle != INVALID_HANDLE_VALUE) {
     LARGE_INTEGER fileSize;
     bool result = GetFileSizeEx(fileHandle, &fileSize);
@@ -239,7 +238,7 @@ internal t_file* win32_directory_add(t_directory_state* state, t_string16 filena
   
   t_file* newFile = state->files + newIndex;
   t_file emptyFile = {0};
-  emptyFile.name = filename;
+  emptyFile.data.filename = filename;
   *newFile = emptyFile;
   state->fileCount += 1;
   
@@ -251,10 +250,10 @@ internal void win32_directory_clear(t_directory_state* state) {
   win32_cache_clear(state);
   for(u32 index = 0; index < state->fileCount; index += 1) {
     t_file* file = state->files + index;
-    assert(file->name.ptr);
-    free(file->name.ptr);
-    file->name.ptr = 0;
-    file->name.len = 0;
+    assert(file->data.filename.ptr);
+    free(file->data.filename.ptr);
+    file->data.filename.ptr = 0;
+    file->data.filename.len = 0;
     file->cacheLoads = 0;
     file->found = false;
   }
@@ -263,7 +262,7 @@ internal void win32_directory_clear(t_directory_state* state) {
 
 internal t_file* win32_directory_find_file(t_directory_state* state, t_string16 filename) {
   for(u32 fileIndex = 0; fileIndex < state->fileCount; fileIndex += 1) {
-    if(string_compare(state->files[fileIndex].name, filename)) {
+    if(string_compare(state->files[fileIndex].data.filename, filename)) {
       return(state->files + fileIndex);
     }
   }

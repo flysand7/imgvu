@@ -20,7 +20,7 @@
 // 
 // 
 
-internal t_image app_decode_file(t_data data) {
+internal t_image app_decode_file(t_image_data data) {
   t_image result = {0};
   result.skip = true;
   debug_variable_unused(data);

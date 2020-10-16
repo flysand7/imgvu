@@ -200,7 +200,7 @@ int main(void)
     
     if(directoryState.changed) {
       directoryState.changed = false;
-      t_string16 currentFilename = directoryState.files[directoryState.currentFile].name;
+      t_string16 currentFilename = directoryState.files[directoryState.currentFile].data.filename;
       if(currentFilename.ptr != 0) {
         SetWindowTextW(global_window.handle, (LPCWSTR)currentFilename.ptr);
       }

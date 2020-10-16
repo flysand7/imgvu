@@ -4,9 +4,10 @@
 #define PLATFORM_H
 
 struct {
+  t_string16 filename;
   u64 size;
   void* ptr;
-} typedef t_data;
+} typedef t_image_data;
 
 struct {
   bool skip;
