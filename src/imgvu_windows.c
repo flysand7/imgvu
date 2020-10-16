@@ -61,6 +61,7 @@ paint_window_gdi(t_window* window, HDC deviceContext) {
 global bool global_running;
 global t_button global_keyboard[0x100];
 global t_window global_window;
+global t_app_state global_app_state;
 
 internal void
 win32_draw_app(t_window* window, HDC deviceContext) {
@@ -69,7 +70,7 @@ win32_draw_app(t_window* window, HDC deviceContext) {
       pixelIndex += 1) {
     window->pixels[pixelIndex] = 0;
   }
-  
+  app_draw(&global_app_state);
   paint_window_gdi(window, deviceContext);
 }
 
