@@ -20,8 +20,8 @@ REM COMPILATION SETUP
 REM =================
 
 set warnings=-w34191 -w44242 -w44254 -w44255 -w44288
-set cmp_flags=%mode% %defines% -nologo -FC -Wall -WX -TC -Ob1 -Oi -EHa -c -Zp4 -Qspectre -wd5045 %warnings%
-set cmp_flags=%cmp_flags% -Qspectre -Zf
+set cmp_flags=%mode% %defines% -nologo -FC -Wall -WX -TC -Ob1 -Oi -EHa -c -Zp4 -wd5045 %warnings%
+set cmp_flags=%cmp_flags% -Zf -Qspectre
 
 set cmp_flags=%cmp_flags% -Fe"%output_file_name%.exe"
 set cmp_flags=%cmp_flags% -Fo"%output_file_name%.obj"
@@ -31,6 +31,3 @@ set lnk_flags=-nologo -incremental:no -debug
 
 cl %cmp_flags% "src\%input_file_name%"
 link %lnk_flags% "%output_file_name%.obj" %lnk_libs%
-	
-del *.ilk 0> nul 1> nul 2> nul
-del *.obj 0> nul 1> nul 2> nul
