@@ -1,5 +1,5 @@
 @echo off
-call build\clang.bat
+rem call build\clang.bat
 call build\msvc.bat
 
 del *.ilk 2> nul
