@@ -43,4 +43,6 @@ wchar_t typedef char16;
 
 internal bool app_update(struct t_directory_state_s* state, t_button* keyboard, r32 dt);
 
+#include"imgvu/main.c"
+
 #endif // IMGVU_H

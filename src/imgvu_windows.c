@@ -4,8 +4,6 @@
 #pragma warning(pop)
 
 #include"imgvu/imgvu.h"
-#include"imgvu/platform.h"
-#include"imgvu/main.c"
 
 // NOTE(bumbread): Windows.h produces shit ton of 
 // warnings starting /W4. I'm disabling them
