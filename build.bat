@@ -1,6 +1,7 @@
 @echo off
-call build-clang.bat
-call build-msvc.bat
+call build\clang.bat
+call build\msvc.bat
+
 del *.ilk 2> nul
 del *.obj 2> nul
 del *.lib 2> nul
