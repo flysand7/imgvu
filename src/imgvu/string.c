@@ -1,7 +1,7 @@
 
 struct { u32 len; char16* ptr; } typedef t_string16;
 
-#define static_make_string16(nm, str) t_string16 nm; nm.ptr=(str); nm.len=sizeof(str)/sizeof(char16) - 1;
+#define static_make_string16(nm, str) t_string16 nm; nm.ptr=(str); nm.len=sizeof(str)/sizeof(char16) - 1
 
 internal t_string16 char16_copy(char16* chars) {
   t_string16 result = {0};
@@ -28,6 +28,7 @@ internal t_string16 char16_count(char16* string) {
   return(result);
 }
 
+#if 0
 internal t_string16 string_concatenate_mem(t_string16 first, t_string16 second) {
   t_string16 result;
   result.len = first.len + second.len;
@@ -44,6 +45,7 @@ internal t_string16 string_concatenate_mem(t_string16 first, t_string16 second) 
   result.ptr[result.len] = 0;
   return(result);
 }
+#endif
 
 internal bool string_begins_with(t_string16 string, t_string16 sub) {
   if(string.len < sub.len) return(false);

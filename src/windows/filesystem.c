@@ -44,26 +44,6 @@ internal void win32_remove_trailing_backslash(t_string16* path) {
   }
 }
 
-internal t_string16 win32_get_file_extension(t_string16 name) {
-  u32 charIndex = name.len;
-  t_string16 result = {0};
-  loop {
-    if(name.ptr[charIndex] == L'.') {
-      u32 symbolsBeforeExtension = (charIndex+1);
-      result.ptr = name.ptr + symbolsBeforeExtension;
-      result.len = name.len - symbolsBeforeExtension;
-      return(result);
-    }
-    else if(name.ptr[charIndex] == L'\\') {
-      result.ptr = name.ptr + name.len;
-      result.len = 0;
-    }
-    if(charIndex == 0) break;
-    charIndex -= 1;
-  }
-  return(result);
-}
-
 internal t_string16 win32_get_path_to_file_mem(t_string16 fullPath) {
   win32_remove_trailing_backslash(&fullPath);
   
@@ -82,6 +62,27 @@ internal t_string16 win32_get_path_to_file_mem(t_string16 fullPath) {
     charIndex -= 1;
   }
   
+  return(result);
+}
+
+#if 0
+internal t_string16 win32_get_file_extension(t_string16 name) {
+  u32 charIndex = name.len;
+  t_string16 result = {0};
+  loop {
+    if(name.ptr[charIndex] == L'.') {
+      u32 symbolsBeforeExtension = (charIndex+1);
+      result.ptr = name.ptr + symbolsBeforeExtension;
+      result.len = name.len - symbolsBeforeExtension;
+      return(result);
+    }
+    else if(name.ptr[charIndex] == L'\\') {
+      result.ptr = name.ptr + name.len;
+      result.len = 0;
+    }
+    if(charIndex == 0) break;
+    charIndex -= 1;
+  }
   return(result);
 }
 
@@ -110,3 +111,4 @@ internal bool directory_contains(t_string16 root, t_string16 dir) {
   // TODO(bumbread): assert full paths
   return(string_begins_with(dir, root));
 }
+#endif

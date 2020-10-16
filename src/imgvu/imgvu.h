@@ -37,10 +37,10 @@ wchar_t typedef char16;
 
 #define array_length(a) (sizeof(a) / sizeof((a)[0]))
 
-
 #include"string.c"
 #include"input.h"
+#include"platform.h"
 
-internal bool update_app(t_button*, r32);
+internal bool app_update(struct t_directory_state_s* state, t_button* keyboard, r32 dt);
 
-#endif //IMGVU_H
+#endif // IMGVU_H

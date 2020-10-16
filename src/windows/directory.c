@@ -40,7 +40,7 @@ internal inline i32 win32_directory_ring_distance(t_directory_state* state, u32 
 internal inline u32 win32_directory_ring_distance(t_directory_state* state, u32 a, u32 b) {
   i32 distance = (i32)a - (i32)b;
   distance = (distance >= 0) ? (distance) : (-distance);
-  u32 remainingSpace = state->fileCount - distance;
+  u32 remainingSpace = state->fileCount - (u32)distance;
   return((remainingSpace < (u32)distance) ? (remainingSpace) : ((u32)distance));
 }
 
