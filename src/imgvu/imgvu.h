@@ -41,8 +41,13 @@ wchar_t typedef char16;
 #include"input.h"
 #include"platform.h"
 
-internal bool app_update(struct t_directory_state_s* state, t_button* keyboard, r32 dt);
+struct {
+  int _stub;
+} typedef t_app_state;
 
-#include"imgvu/main.c"
+internal bool app_update(struct t_directory_state_s* state, t_button* keyboard, r32 dt);
+internal void app_draw(t_app_state* state);
+
+#include"main.c"
 
 #endif // IMGVU_H
