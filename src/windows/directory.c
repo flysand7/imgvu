@@ -289,7 +289,7 @@ internal void win32_directory_scan(t_directory_state* state) {
       win32_directory_remove(state, fileIndex);
     }
     else {
-      win32_cache_request_add(state, fileIndex);
+      //win32_cache_request_add(state, fileIndex);
       fileIndex += 1;
     }
   }
