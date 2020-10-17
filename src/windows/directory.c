@@ -56,8 +56,10 @@ internal void win32_cache_clear(t_directory_state* dirState) {
 //  it is next to the current file in the directory
 //  it is frequently used (4*freq > max)
 
-internal bool win32_cache_is_frequent_enough(u32 cacheLoads, u32 maxCacheLoads) {
-  return(4*cacheLoads > maxCacheLoads);
+internal bool win32_check_usage_frequency(u32 cacheLoads, u32 maxCacheLoads, u32 avgCacheLoads) {
+  bool isUsageSpread = 2*avgCacheLoads > maxCacheLoads;
+  bool isFrequentEnough = 4*cacheLoads > maxCacheLoads;
+  return(isUsageSpread && isFrequentEnough);
 }
 
 internal void win32_cache_remove(t_directory_state* dirState, u32 fileIndex) {
@@ -139,17 +141,22 @@ internal bool win32_cache_add(t_directory_state* dirState, u32 fileIndex) {
 internal void win32_cache_update(t_directory_state* dirState) {
   // NOTE(bumbread): updating the cache by load frequency
   u32 maxCacheLoads = 0;
+  u32 totalCacheLoads = 0;
   for(u32 fileIndex = 0; fileIndex < dirState->fileCount; fileIndex += 1) {
     u32 currentCacheLoads = dirState->files[fileIndex].cacheLoads;
     if(currentCacheLoads > maxCacheLoads) maxCacheLoads = currentCacheLoads;
+    totalCacheLoads += currentCacheLoads;
   }
+  // TODO(bumbread): should this be counted using 
+  // floating point arithmetic
+  u32 avgCacheLoads = totalCacheLoads / dirState->fileCount;
   
   u32 fileIndex = 0;
   loop {
     t_file* file = dirState->files + fileIndex;
     
     u32 currentCacheLoads = file->cacheLoads;
-    bool shouldBeCached = win32_cache_is_frequent_enough(currentCacheLoads, maxCacheLoads);
+    bool shouldBeCached = win32_check_usage_frequency(currentCacheLoads, maxCacheLoads, avgCacheLoads);
     bool isCached = file->cached;
     
     if(!isCached && shouldBeCached) {
