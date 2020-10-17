@@ -20,7 +20,6 @@ struct t_directory_state_s {
   bool changed;
 } typedef t_directory_state;
 
-// TODO(bumbread): some of the methods operating on directories should be up in the platform layer
 internal inline u32 win32_directory_ring_distance(t_directory_state* dirState, u32 a, u32 b) {
   i32 distance = (i32)a - (i32)b;
   distance = (distance >= 0) ? (distance) : (-distance);
@@ -318,7 +317,6 @@ internal void platform_directory_set(t_directory_state* dirState, t_string16 pat
   }
 }
 
-// TODO(bumbread): handle the case when the file is not found
 internal void platform_directory_next_file(t_directory_state* dirState) {
   if(dirState->fileCount != 0) {
     u32 newFileIndex = (dirState->currentFile+1) % dirState->fileCount;

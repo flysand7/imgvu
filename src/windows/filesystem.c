@@ -116,7 +116,6 @@ internal t_string16 win32_get_dir_level_mem(t_string16 filename, u32 level) {
 }
 
 internal bool directory_contains(t_string16 root, t_string16 dir) {
-  // TODO(bumbread): assert full paths
   return(string_begins_with(dir, root));
 }
 #endif
