@@ -62,7 +62,7 @@ internal bool win32_cache_is_frequent_enough(u32 cacheLoads, u32 maxCacheLoads) 
 
 internal void win32_cache_remove(t_directory_state* dirState, u32 fileIndex) {
   t_file* currentFile = dirState->files + fileIndex;
-  assert(!currentFile->cached);
+  assert(currentFile->cached);
   currentFile->cached = false;
   currentFile->cacheLoads = 0;
   win32_free_file(currentFile);
@@ -72,7 +72,7 @@ internal void win32_directory_remove(t_directory_state* dirState, u32 index) {
   assert(dirState->fileCount != 0);
   
   t_file* file = dirState->files + index;
-  win32_cache_remove(dirState, index);
+  if(file->cached) win32_cache_remove(dirState, index);
   assert(file->data.filename.ptr);
   free(file->data.filename.ptr);
   file->data.filename.ptr = 0;
