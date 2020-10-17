@@ -205,7 +205,7 @@ internal t_string16 win32_get_full_path_from_args(void) {
   }
 }
 
-// TODO(bumbread): natively support alt+f4 way of closing. probably also add alt+enter for fullscreen,
+// TODO(bumbread): also add alt+enter for fullscreen,
 // TODO(bumbread): and also add fullscreen support, yeah!
 int main(void)
 {
@@ -256,7 +256,10 @@ int main(void)
       if(!g_running) break;
     }
     
-    if(app_update(&g_app_state, &directoryState, g_keyboard, dt)) break;
+    bool stop = app_update(&g_app_state, &directoryState, g_keyboard, dt);
+    stop |= (g_keyboard[VKEY_MENU].down && g_keyboard[VKEY_F4].pressed);
+    if(stop) break;
+    
     win32_draw_app(&g_window, deviceContext);
     
     if(directoryState.changed) {
