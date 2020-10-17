@@ -13,18 +13,18 @@ This is a small educational project which I had started for couple reasons.
 * *cross platform* means that this program is _ready to be ported_ to any other platform if someone writes a platform layer for that platform and compiles it.
 
 ## supported formats
-*[ ] ppm
-*[x] bmp (only 24 bit uncompressed RGB data)
-*[ ] tga
-*[ ] gif
-*[ ] jpeg
-*[ ] png
-*[ ] jpeg2000
-*[ ] openexr
-*[ ] heif
-*[ ] avif
-*[ ] flif
-*[ ] bpg
+* [ ] ppm
+* [x] bmp (only 24 bit uncompressed RGB data)
+* [ ] tga
+* [ ] gif
+* [ ] jpeg
+* [ ] png
+* [ ] jpeg2000
+* [ ] openexr
+* [ ] heif
+* [ ] avif
+* [ ] flif
+* [ ] bpg
 
 ## features/key points
 * immediate in response
