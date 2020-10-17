@@ -25,7 +25,7 @@
 
 internal t_image app_decode_file(t_image_data data) {
   t_image result = {0};
-  result.skip = false;
+  result.success = false;
   try_parse_ppm(&data, &result);
   try_parse_bmp(&data, &result);
   debug_variable_unused(data);

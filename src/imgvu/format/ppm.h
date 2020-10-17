@@ -61,7 +61,7 @@ internal u32 ppm_next_number(struct t_ppm_stream* stream) {
 
 internal void try_parse_ppm(t_image_data* data, t_image* result) {
   assert(result->pixels == 0);
-  if(result->skip) return;
+  if(result->success) return;
   
   struct t_ppm_stream stream;
   stream.ptr = (byte*)data->ptr;
@@ -162,6 +162,8 @@ internal void try_parse_ppm(t_image_data* data, t_image* result) {
             }
           }
         }
+        
+        result->success = true;
       }
     }
   }
@@ -169,7 +171,7 @@ internal void try_parse_ppm(t_image_data* data, t_image* result) {
   return;
   
   error: 
-  result->skip = true;
+  result->success = false;
   result->width = 0;
   result->height = 0;
   if(result->pixels) free(result->pixels);

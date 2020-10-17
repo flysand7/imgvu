@@ -27,7 +27,7 @@ struct {
 #pragma pack(pop)
 
 internal void try_parse_bmp(t_image_data* file, t_image* result) {
-  if(result->skip) return;
+  if(result->success) return;
   
   byte* stream = (byte*)file->ptr;
   if(stream[0] == 'B' && stream[1] == 'M') {
@@ -73,13 +73,13 @@ internal void try_parse_bmp(t_image_data* file, t_image* result) {
             pixelRow += rowSize;
           }
           
-          result->skip = false;
+          result->success = true;
           return;
         }
       }
     }
   }
-  result->skip = true;
+  result->success = false;
 }
 
 #endif //BMP_H

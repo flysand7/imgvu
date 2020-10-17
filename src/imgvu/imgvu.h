@@ -49,7 +49,7 @@ struct {
 } typedef t_image_data;
 
 struct {
-  bool skip;
+  bool success;
   u32 width;
   u32 height;
   u32* pixels;

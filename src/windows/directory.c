@@ -121,7 +121,7 @@ internal bool win32_cache_add(t_directory_state* dirState, u32 fileIndex) {
     file->data.ptr = fileData;
     file->data.size = (u32)fileSize.LowPart;
     file->image = app_decode_file(file->data);
-    if(!file->image.skip) {
+    if(file->image.success == true) {
       file->cached = true;
       file->cacheLoads += 1;
     }
