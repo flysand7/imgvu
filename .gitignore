@@ -1,3 +1,7 @@
 test/**
-*.pdb 
+*.pdb
 *.exe
+*.bmp
+*.png
+*.jpeg
+*.jpg
