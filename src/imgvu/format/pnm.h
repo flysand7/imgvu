@@ -240,8 +240,8 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
             columnCounter += 1;
             if(columnCounter == width) {
               columnCounter = 0;
-              rowCounter -= 1;
               if(rowCounter == 0) break;
+              rowCounter -= 1;
               
               lastRowPos += rowSize;
               stream.pos = lastRowPos;
