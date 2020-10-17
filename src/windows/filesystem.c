@@ -14,7 +14,6 @@ internal t_string16 win32_get_file_path_mem(t_string16 name) {
   persist t_string16 prepend = {0};
   if(!prepend.len) prepend = char16_copy(L"\\\\?\\");
   
-  t_string16 result;
   // NOTE(bumbread): making sure there's no \\?\.
   if(string_begins_with(name, prepend)) {
     name.len -= 4;
@@ -23,6 +22,7 @@ internal t_string16 win32_get_file_path_mem(t_string16 name) {
   
   // NOTE(bumbread): running the command with empty buffer to get the receive length
   u32 receiveLength = (u32)GetFullPathNameW((LPCWSTR)name.ptr, 0, 0, 0);
+  t_string16 result;
   if(receiveLength == 0) {
     result.len = 0;
     result.ptr = 0;
@@ -31,9 +31,7 @@ internal t_string16 win32_get_file_path_mem(t_string16 name) {
   // NOTE(bumbread): reveiving the actual full path
   char16* fullName = malloc(receiveLength * sizeof(char16));
   GetFullPathNameW((LPCWSTR)name.ptr, receiveLength, fullName, 0);
-  fullName[receiveLength-1] = 0;
-  result.len = receiveLength-1;
-  result.ptr = fullName;
+  result = char16_count(fullName);
   return(result);
 }
 
@@ -45,13 +43,8 @@ internal void win32_remove_trailing_backslash(t_string16* path) {
 }
 
 internal t_string16 win32_get_path_to_file_mem(t_string16 fullPath) {
-  win32_remove_trailing_backslash(&fullPath);
-  
-  t_string16 result;
-  result.ptr = malloc(fullPath.len * sizeof(char16));
-  for(u32 i = 0; i < fullPath.len; i += 1) result.ptr[i] = fullPath.ptr[i];
+  t_string16 result = string_copy_mem(fullPath);
   u32 charIndex = fullPath.len - 1;
-  
   loop {
     if(result.ptr[charIndex] == L'\\') {
       result.ptr[charIndex] = 0;
@@ -65,7 +58,22 @@ internal t_string16 win32_get_path_to_file_mem(t_string16 fullPath) {
   return(result);
 }
 
+internal t_string16 win32_get_path_mem(t_string16 fullPath) {
+  t_string16 result = {0};
+  
+  win32_remove_trailing_backslash(&fullPath);
+  WIN32_FIND_DATAW findData = {0};
+  HANDLE searchHandle = FindFirstFileW((LPCWSTR)fullPath.ptr, &findData);
+  if(searchHandle != INVALID_HANDLE_VALUE) {
+    bool isDirectory = ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
+    if(isDirectory) result = string_copy_mem(fullPath);
+    else result = win32_get_path_to_file_mem(fullPath);
+  }
+  return(result);
+}
+
 #if 0
+
 internal t_string16 win32_get_file_extension(t_string16 name) {
   u32 charIndex = name.len;
   t_string16 result = {0};

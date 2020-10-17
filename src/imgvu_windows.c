@@ -214,7 +214,7 @@ int main(void)
   t_directory_state directoryState = {0};
   directoryState.changed = true;
   {
-    t_string16 watchDir = win32_get_path_to_file_mem(fileToOpen);
+    t_string16 watchDir = win32_get_path_mem(fileToOpen);
     platform_directory_set(&directoryState, watchDir);
   }
   

@@ -28,6 +28,15 @@ internal t_string16 char16_count(char16* string) {
   return(result);
 }
 
+internal t_string16 string_copy_mem(t_string16 string) {
+  t_string16 result;
+  result.len = string.len;
+  result.ptr = malloc((result.len+1)* sizeof(char16));
+  for(u32 i = 0; i < result.len; i += 1) result.ptr[i] = string.ptr[i];
+  result.ptr[result.len] = 0;
+  return(result);
+}
+
 #if 0
 internal t_string16 string_concatenate_mem(t_string16 first, t_string16 second) {
   t_string16 result;
