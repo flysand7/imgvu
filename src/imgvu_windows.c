@@ -188,13 +188,19 @@ internal t_string16 win32_get_full_path_from_args(void) {
   assert(args != 0);
   
   t_string16 filePath = {0};
-  if(argCount == 1)     filePath = char16_copy_mem(args[0]);
-  else if(argCount > 1) filePath = char16_copy_mem(args[1]);
-  assert(filePath.ptr != 0);
-  assert(filePath.len != 0);
+  if(argCount > 1) {
+    filePath = char16_copy_mem(args[1]);
+    assert(filePath.ptr != 0);
+    assert(filePath.len != 0);
+    t_string16 fullPath = win32_get_file_path_mem(filePath);
+    win32_remove_trailing_backslash(&fullPath);
+    free(filePath.ptr);
+  }
+  else {
+    // TODO(bumbread): load current path from here 
+    // and return directory it points to.
+  }
   
-  t_string16 fullPath = win32_get_file_path_mem(filePath);
-  win32_remove_trailing_backslash(&fullPath);
   return(fullPath);
 }
 
