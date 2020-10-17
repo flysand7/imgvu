@@ -107,8 +107,8 @@ internal void platform_draw_image(t_location* loc, t_image* image) {
     height -= over;
   }
   
-  assert(xPosition > 0);
-  assert(yPosition > 0);
+  assert(xPosition >= 0);
+  assert(yPosition >= 0);
   assert(xPosition + width <= maxWidth);
   assert(yPosition + height <= maxHeight);
   
