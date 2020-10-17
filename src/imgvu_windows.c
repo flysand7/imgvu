@@ -58,10 +58,12 @@ paint_window_gdi(t_window* window, HDC deviceContext) {
                 window->pixels, &bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
 }
 
-global bool global_running;
-global t_button global_keyboard[0x100];
-global t_window global_window;
-global t_app_state global_app_state;
+// TODO(bumbread): get rid of as many globals as possible
+// without making the control flow confusing
+global bool g_running;
+global t_button g_keyboard[0x100];
+global t_window g_window;
+global t_app_state g_app_state;
 
 internal void
 win32_draw_app(t_window* window, HDC deviceContext) {
@@ -70,13 +72,13 @@ win32_draw_app(t_window* window, HDC deviceContext) {
       pixelIndex += 1) {
     window->pixels[pixelIndex] = 0;
   }
-  app_draw(&global_app_state);
+  app_draw(&g_app_state);
   paint_window_gdi(window, deviceContext);
 }
 
 internal void platform_draw_image(t_location* loc, t_image* image) {
-  i32 maxWidth = (i32)global_window.clientWidth;
-  i32 maxHeight = (i32)global_window.clientHeight;
+  i32 maxWidth = (i32)g_window.clientWidth;
+  i32 maxHeight = (i32)g_window.clientHeight;
   
   i32 xPosition = (i32)loc->posX;
   i32 yPosition = (i32)loc->posY;
@@ -112,7 +114,7 @@ internal void platform_draw_image(t_location* loc, t_image* image) {
   assert(xPosition + width <= maxWidth);
   assert(yPosition + height <= maxHeight);
   
-  u32* targetRow = global_window.pixels + (u32)yPosition*global_window.clientWidth + (u32)xPosition;
+  u32* targetRow = g_window.pixels + (u32)yPosition*g_window.clientWidth + (u32)xPosition;
   u32* sourceRow = image->pixels;
   for(i32 row = 0; row < height; row += 1) {
     u32* targetPixel = targetRow;
@@ -123,7 +125,7 @@ internal void platform_draw_image(t_location* loc, t_image* image) {
       sourcePixel += 1;
     }
     sourceRow += image->width;
-    targetRow += global_window.clientWidth;
+    targetRow += g_window.clientWidth;
   }
 }
 
@@ -142,9 +144,9 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
       u64 keyCode = (u64)wp;
       assert(keyCode < KEYBOARD_SIZE);
       if(wasPressed != isPressed) {
-        global_keyboard[keyCode].down = isPressed;
-        global_keyboard[keyCode].pressed = isPressed;
-        global_keyboard[keyCode].released = wasPressed;
+        g_keyboard[keyCode].down = isPressed;
+        g_keyboard[keyCode].pressed = isPressed;
+        g_keyboard[keyCode].released = wasPressed;
       }
       return(0);
     }
@@ -156,20 +158,20 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
     case(WM_SIZE): {
       u32 newClientWidth = LOWORD(lp);
       u32 newClientHeight = HIWORD(lp);
-      resize_window(&global_window, newClientWidth, newClientHeight);
+      resize_window(&g_window, newClientWidth, newClientHeight);
       return(0);
     }
     
     case(WM_PAINT): {
       PAINTSTRUCT paintStruct;
-      HDC paintDC = BeginPaint(global_window.handle, &paintStruct);
-      win32_draw_app(&global_window, paintDC);
-      EndPaint(global_window.handle, &paintStruct);
+      HDC paintDC = BeginPaint(g_window.handle, &paintStruct);
+      win32_draw_app(&g_window, paintDC);
+      EndPaint(g_window.handle, &paintStruct);
       return(0);
     }
     
     case(WM_CLOSE): {
-      global_running = false;
+      g_running = false;
       return(0);
     }
     
@@ -226,45 +228,45 @@ int main(void)
     windowClass.lpszClassName = L"imgvu_window_class";
     
     RegisterClassExW(&windowClass);
-    global_window.handle= CreateWindowExW(0, windowClass.lpszClassName, L"imgvu", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-                                          CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                                          0, 0, instance, 0);
-    assert(global_window.handle);
-    ShowWindow(global_window.handle, SW_SHOWDEFAULT);
+    g_window.handle= CreateWindowExW(0, windowClass.lpszClassName, L"imgvu", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+                                     CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+                                     0, 0, instance, 0);
+    assert(g_window.handle);
+    ShowWindow(g_window.handle, SW_SHOWDEFAULT);
   }
   
-  HDC deviceContext = GetDC(global_window.handle);
-  global_running = true;
+  HDC deviceContext = GetDC(g_window.handle);
+  g_running = true;
   
   r32 dt = 0;
   loop {
     {
       MSG message;
-      while(PeekMessageW(&message, global_window.handle, 0, 0, PM_REMOVE)) {
+      while(PeekMessageW(&message, g_window.handle, 0, 0, PM_REMOVE)) {
         TranslateMessage(&message);
         DispatchMessageW(&message);
       }
-      if(!global_running) break;
+      if(!g_running) break;
     }
     
-    if(app_update(&global_app_state, &directoryState, global_keyboard, dt)) break;
-    win32_draw_app(&global_window, deviceContext);
+    if(app_update(&g_app_state, &directoryState, g_keyboard, dt)) break;
+    win32_draw_app(&g_window, deviceContext);
     
     if(directoryState.changed) {
       directoryState.changed = false;
       t_string16 currentFilename = directoryState.files[directoryState.currentFile].data.filename;
       if(currentFilename.ptr != 0) {
-        SetWindowTextW(global_window.handle, (LPCWSTR)currentFilename.ptr);
+        SetWindowTextW(g_window.handle, (LPCWSTR)currentFilename.ptr);
       }
       else {
         static_make_string16(prefix, L"[no file found]");
-        SetWindowTextW(global_window.handle, (LPCWSTR)prefix.ptr);
+        SetWindowTextW(g_window.handle, (LPCWSTR)prefix.ptr);
       }
     }
     
     for(u32 keyIndex = 0; keyIndex < KEYBOARD_SIZE; keyIndex += 1) {
-      global_keyboard[keyIndex].pressed = false;
-      global_keyboard[keyIndex].released = false;
+      g_keyboard[keyIndex].pressed = false;
+      g_keyboard[keyIndex].released = false;
     }
   }
   
