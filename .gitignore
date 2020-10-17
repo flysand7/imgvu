@@ -1,7 +1,17 @@
 test/**
 *.pdb
 *.exe
+
 *.bmp
 *.png
 *.jpeg
 *.jpg
+*.pgm
+*.pbm
+*.ppm
+*.tif
+*.tiff
+*.raw
+*.tga
+*.ico
+*.gif
