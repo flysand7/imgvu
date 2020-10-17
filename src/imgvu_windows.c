@@ -83,6 +83,11 @@ internal void platform_draw_image(t_location* loc, t_image* image) {
   i32 width = (i32)image->width;
   i32 height = (i32)image->height;
   
+  if(xPosition >= maxWidth) return;
+  if(yPosition >= maxHeight) return;
+  if(xPosition + maxWidth <= 0) return;
+  if(yPosition + maxHeight <= 0) return;
+  
   if(xPosition < 0) { 
     width += xPosition;
     xPosition = 0;
@@ -101,10 +106,6 @@ internal void platform_draw_image(t_location* loc, t_image* image) {
     assert(over > 0);
     height -= over;
   }
-  if(xPosition >= maxWidth) return;
-  if(yPosition >= maxHeight) return;
-  if(xPosition + maxWidth <= 0) return;
-  if(yPosition + maxHeight <= 0) return;
   
   assert(xPosition > 0);
   assert(yPosition > 0);
