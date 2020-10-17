@@ -1,32 +1,32 @@
 /* date = October 17th 2020 9:04 pm */
 
-#ifndef PPM_H
-#define PPM_H
+#ifndef PNM_H
+#define PNM_H
 
-struct t_ppm_stream {
+struct t_pnm_stream {
   byte* ptr;
   u64 pos;
   u64 size;
   bool error;
 };
 
-internal bool ppm_is_digit(byte character) {
+internal bool pnm_is_digit(byte character) {
   return(character >= '0' && character <= '9');
 }
 
-internal bool ppm_is_white(byte character) {
+internal bool pnm_is_white(byte character) {
   return(character == 0x09 || character == 0x0a || character == 0x0d || character == 0x20);
 }
 
 // TODO(bumbread): skip comments
-internal u32 ppm_next_number(struct t_ppm_stream* stream) {
+internal u32 pnm_next_number(struct t_pnm_stream* stream) {
   if(stream->error) return(0);
   
   loop {
     byte character = stream->ptr[stream->pos];
     if(stream->pos >= stream->size) goto error;
     else if(character == 0) goto error;
-    else if(ppm_is_white(character)) stream->pos += 1;
+    else if(pnm_is_white(character)) stream->pos += 1;
     else if(character == '#') {
       loop {
         stream->pos += 1;
@@ -41,12 +41,12 @@ internal u32 ppm_next_number(struct t_ppm_stream* stream) {
   loop {
     if(stream->pos >= stream->size) goto error;
     byte character = stream->ptr[stream->pos];
-    if(ppm_is_digit(character)) {
+    if(pnm_is_digit(character)) {
       u32 digit = (u32)(character - '0');
       result *= 10;
       result += digit;
     }
-    else if(ppm_is_white(character)) break;
+    else if(pnm_is_white(character)) break;
     else if(character == 0) break;
     else if(character == '#') break;
     else goto error;
@@ -59,11 +59,11 @@ internal u32 ppm_next_number(struct t_ppm_stream* stream) {
   return(0);
 }
 
-internal void try_parse_ppm(t_image_data* data, t_image* result) {
+internal void try_parse_pnm(t_image_data* data, t_image* result) {
   assert(result->pixels == 0);
   if(result->success) return;
   
-  struct t_ppm_stream stream;
+  struct t_pnm_stream stream;
   stream.ptr = (byte*)data->ptr;
   stream.pos = 0;
   stream.size = data->size;
@@ -78,9 +78,9 @@ internal void try_parse_ppm(t_image_data* data, t_image* result) {
       if(isPixelAscii || isPixelBytes || isGreyBytes || isGreyAscii) {
         stream.pos += 2;
         
-        u32 width = ppm_next_number(&stream);
-        u32 height = ppm_next_number(&stream);
-        u32 range = ppm_next_number(&stream);
+        u32 width = pnm_next_number(&stream);
+        u32 height = pnm_next_number(&stream);
+        u32 range = pnm_next_number(&stream);
         if(stream.error) goto error;
         if(width == 0 || height == '0' || range == '0') goto error;
         
@@ -93,9 +93,9 @@ internal void try_parse_ppm(t_image_data* data, t_image* result) {
           for(u32 row = height-1; row != 0; row -= 1) {
             for(u32 column = 0; column < width; column += 1) {
               
-              u32 x = ppm_next_number(&stream);
-              u32 y = ppm_next_number(&stream);
-              u32 z = ppm_next_number(&stream);
+              u32 x = pnm_next_number(&stream);
+              u32 y = pnm_next_number(&stream);
+              u32 z = pnm_next_number(&stream);
               if(stream.error) goto error;
               if((x > range) | (y > range) | (z > range)) goto error;
               
@@ -111,7 +111,7 @@ internal void try_parse_ppm(t_image_data* data, t_image* result) {
         
         else if(isPixelBytes) {
           if(range >= 0x100) goto error;
-          if(ppm_is_white(stream.ptr[stream.pos])) {
+          if(pnm_is_white(stream.ptr[stream.pos])) {
             stream.pos += 1;
           }
           for(u32 row = height-1; row != 0; row -= 1) {
@@ -133,7 +133,7 @@ internal void try_parse_ppm(t_image_data* data, t_image* result) {
           for(u32 row = height-1; row != 0; row -= 1) {
             for(u32 column = 0; column < width; column += 1) {
               
-              u32 v = ppm_next_number(&stream);
+              u32 v = pnm_next_number(&stream);
               if(stream.error) goto error;
               if(v > range) goto error;
               
@@ -146,7 +146,7 @@ internal void try_parse_ppm(t_image_data* data, t_image* result) {
         
         else if(isGreyBytes) {
           if(range >= 0x100) goto error;
-          if(ppm_is_white(stream.ptr[stream.pos])) {
+          if(pnm_is_white(stream.ptr[stream.pos])) {
             stream.pos += 1;
           }
           for(u32 row = height-1; row != 0; row -= 1) {
@@ -178,4 +178,4 @@ internal void try_parse_ppm(t_image_data* data, t_image* result) {
   return;
 }
 
-#endif //PPM_H
+#endif //PNM_H
