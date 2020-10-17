@@ -90,7 +90,7 @@ internal void try_parse_ppm(t_image_data* data, t_image* result) {
         u32* pixels = result->pixels;
         
         if(isPixelAscii) {
-          for(u32 row = 0; row < height; row += 1) {
+          for(u32 row = height-1; row != 0; row -= 1) {
             for(u32 column = 0; column < width; column += 1) {
               
               u32 x = ppm_next_number(&stream);
@@ -111,12 +111,10 @@ internal void try_parse_ppm(t_image_data* data, t_image* result) {
         
         else if(isPixelBytes) {
           if(range >= 0x100) goto error;
-          
-          // NOTE(bumbread): only single whitespace character is allowed
           if(ppm_is_white(stream.ptr[stream.pos])) {
             stream.pos += 1;
           }
-          for(u32 row = 0; row < height; row += 1) {
+          for(u32 row = height-1; row != 0; row -= 1) {
             for(u32 column = 0; column < width; column += 1) {
               if(stream.pos + 3 > stream.size) goto error;
               u32 r = stream.ptr[stream.pos+0];
@@ -132,7 +130,7 @@ internal void try_parse_ppm(t_image_data* data, t_image* result) {
         
         else if(isGreyAscii) {
           if(range >= 0x1000) goto error;
-          for(u32 row = 0; row < height; row += 1) {
+          for(u32 row = height-1; row != 0; row -= 1) {
             for(u32 column = 0; column < width; column += 1) {
               
               u32 v = ppm_next_number(&stream);
@@ -148,7 +146,10 @@ internal void try_parse_ppm(t_image_data* data, t_image* result) {
         
         else if(isGreyBytes) {
           if(range >= 0x100) goto error;
-          for(u32 row = 0; row < height; row += 1) {
+          if(ppm_is_white(stream.ptr[stream.pos])) {
+            stream.pos += 1;
+          }
+          for(u32 row = height-1; row != 0; row -= 1) {
             for(u32 column = 0; column < width; column += 1) {
               if(stream.pos + 1 > stream.size) goto error;
               u32 v = stream.ptr[stream.pos];
