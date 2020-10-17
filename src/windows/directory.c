@@ -139,7 +139,7 @@ internal bool win32_cache_add(t_directory_state* dirState, u32 fileIndex) {
 internal void win32_cache_update(t_directory_state* dirState) {
   // NOTE(bumbread): updating the cache by load frequency
   u32 maxCacheLoads = 0;
-  for(u32 fileIndex = 0; fileIndex < dirState->fileCount;) {
+  for(u32 fileIndex = 0; fileIndex < dirState->fileCount; fileIndex += 1) {
     u32 currentCacheLoads = dirState->files[fileIndex].cacheLoads;
     if(currentCacheLoads > maxCacheLoads) maxCacheLoads = currentCacheLoads;
   }
