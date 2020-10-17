@@ -195,13 +195,14 @@ internal t_string16 win32_get_full_path_from_args(void) {
     t_string16 fullPath = win32_get_file_path_mem(filePath);
     win32_remove_trailing_backslash(&fullPath);
     free(filePath.ptr);
+    return(fullPath);
   }
   else {
     // TODO(bumbread): load current path from here 
     // and return directory it points to.
+    t_string16 result = {0};
+    return(result);
   }
-  
-  return(fullPath);
 }
 
 // TODO(bumbread): natively support alt+f4 way of closing. probably also add alt+enter for fullscreen,
