@@ -26,9 +26,10 @@ struct {
 } typedef t_bitmap_header;
 #pragma pack(pop)
 
-internal bool try_parse_bmp(t_image_data* file, t_image* result) {
-  byte* stream = (byte*)file->ptr;
+internal void try_parse_bmp(t_image_data* file, t_image* result) {
+  if(result->skip) return;
   
+  byte* stream = (byte*)file->ptr;
   if(stream[0] == 'B' && stream[1] == 'M') {
     t_bitmap_header* bitmapHeader = (t_bitmap_header*)stream;
     
@@ -71,11 +72,14 @@ internal bool try_parse_bmp(t_image_data* file, t_image* result) {
             targetRow += result->width;
             pixelRow += rowSize;
           }
-          return(0);
-        } else return(1);
-      } else return(1);
-    } else return(1);
-  } else return(1);
+          
+          result->skip = false;
+          return;
+        }
+      }
+    }
+  }
+  result->skip = true;
 }
 
 #endif //BMP_H
