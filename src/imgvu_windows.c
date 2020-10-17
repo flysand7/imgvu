@@ -114,10 +114,10 @@ internal void platform_draw_image(t_location* loc, t_image* image) {
   
   u32* targetRow = global_window.pixels + (u32)yPosition*global_window.clientWidth + (u32)xPosition;
   u32* sourceRow = image->pixels;
-  for(i32 column = 0; column < width; column += 1) {
+  for(i32 row = 0; row < height; row += 1) {
     u32* targetPixel = targetRow;
     u32* sourcePixel = sourceRow;
-    for(i32 row = 0; row < height; row += 1) {
+    for(i32 column = 0; column < width; column += 1) {
       *targetPixel = *sourcePixel;
       targetPixel += 1;
       sourcePixel += 1;
