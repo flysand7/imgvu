@@ -64,7 +64,7 @@ internal bool try_parse_bmp(t_image_data* file, t_image* result) {
               u32 r = *channel; channel += 1;
               u32 g = *channel; channel += 1;
               u32 b = *channel; channel += 1;
-              u32 color = b | (g<<8) | (r<<16) | (0xFF000000);
+              u32 color = (b<<16) | (g<<8) | (r<<0) | (0xFF000000);
               *targetPixel = color;
               targetPixel += 1;
             }
