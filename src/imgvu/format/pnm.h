@@ -70,8 +70,10 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
   
   if(stream.size > 2) {
     if(stream.ptr[0] == 'P') {
+      bool isBitAscii   = (stream.ptr[1] == '1');
       bool isGreyAscii  = (stream.ptr[1] == '2');
       bool isPixelAscii = (stream.ptr[1] == '3');
+      bool isBitBytes   = (stream.ptr[1] == '4');
       bool isGreyBytes  = (stream.ptr[1] == '5');
       bool isPixelBytes = (stream.ptr[1] == '6');
       
@@ -107,6 +109,7 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
               pixels[column + row * width] = color;
             }
           }
+          result->success = true;
         }
         
         else if(isPixelBytes) {
@@ -126,6 +129,7 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
               pixels[column + row * width] = color;
             }
           }
+          result->success = true;
         }
         
         else if(isGreyAscii) {
@@ -142,6 +146,7 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
               pixels[column + row * width] = color;
             }
           }
+          result->success = true;
         }
         
         else if(isGreyBytes) {
@@ -161,9 +166,92 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
               pixels[column + row * width] = color;
             }
           }
+          result->success = true;
         }
+      }
+      else if(isBitAscii || isBitBytes) {
+        stream.pos += 2;
         
-        result->success = true;
+        u32 width = pnm_next_number(&stream);
+        u32 height = pnm_next_number(&stream);
+        if(stream.error) goto error;
+        if(width == 0 || height == '0') goto error;
+        
+        result->width = width;
+        result->height = height;
+        result->pixels = malloc(result->width*result->height * sizeof(u32));
+        u32* pixels = result->pixels;
+        
+        u32 columnCounter = 0;
+        u32 rowCounter = height-1;
+        
+        if(isBitAscii) {
+          loop {
+            if(stream.pos + 1 > stream.size) goto error;
+            byte character = stream.ptr[stream.pos];
+            if(character == '0' || character == '1') {
+              u32 color = ((character == '1')?(0xffffffff):(0xff000000));
+              pixels[columnCounter + rowCounter * result->width] = color;
+              columnCounter += 1;
+              if(columnCounter == width) {
+                columnCounter = 0;
+                rowCounter -= 1;
+                if(rowCounter == 0) break;
+              }
+              stream.pos += 1;
+            }
+            else if(character == '#') {
+              loop {
+                character = stream.ptr[stream.pos];
+                if(character == '\n') break;
+                if(character == 0) break;
+                stream.pos += 1;
+              }
+            }
+            else if(character == 0) break;
+            else {
+              stream.pos += 1;
+            }
+          }
+          
+          result->success = true;
+        }
+        else if(isBitBytes) {
+          if(pnm_is_white(stream.ptr[stream.pos])) {
+            stream.pos += 1;
+          }
+          u32 bitCounter = 0;
+          u32 lastByte = 0;
+          u64 lastRowPos = stream.pos;
+          u64 rowSize = (width+7)/8;
+          loop {
+            u32 currentBit = (lastByte >> (7-bitCounter)) & 1;
+            u32 color = (currentBit != 0) ? (0xff000000) : (0xffffffff);
+            pixels[columnCounter + rowCounter * result->width] = color;
+            
+            bitCounter += 1;
+            if(bitCounter == 8) {
+              bitCounter = 0;
+              if(stream.pos + 1 > stream.size) goto error;
+              stream.pos += 1;
+              lastByte = stream.ptr[stream.pos];
+            }
+            
+            columnCounter += 1;
+            if(columnCounter == width) {
+              columnCounter = 0;
+              rowCounter -= 1;
+              if(rowCounter == 0) break;
+              
+              lastRowPos += rowSize;
+              stream.pos = lastRowPos;
+              lastByte = stream.ptr[stream.pos];
+              bitCounter = 0;
+            }
+          }
+          
+          result->success = true;
+        }
       }
     }
   }
