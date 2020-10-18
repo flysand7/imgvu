@@ -92,7 +92,7 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
         u32* pixels = result->pixels;
         
         if(isPixelAscii) {
-          for(u32 row = height-1; row != 0; row -= 1) {
+          for(u32 row = height-1;; row -= 1) {
             for(u32 column = 0; column < width; column += 1) {
               
               u32 x = pnm_next_number(&stream);
@@ -108,6 +108,7 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
               u32 color = r | (g << 8) | (b << 16) | (0xff000000);
               pixels[column + row * width] = color;
             }
+            if(row == 0) break;
           }
           result->success = true;
         }
@@ -117,7 +118,7 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
           if(pnm_is_white(stream.ptr[stream.pos])) {
             stream.pos += 1;
           }
-          for(u32 row = height-1; row != 0; row -= 1) {
+          for(u32 row = height-1;; row -= 1) {
             for(u32 column = 0; column < width; column += 1) {
               if(stream.pos + 3 > stream.size) goto error;
               u32 r = stream.ptr[stream.pos+0];
@@ -128,13 +129,14 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
               u32 color = r | (g << 8) | (b << 16) | (0xff000000);
               pixels[column + row * width] = color;
             }
+            if(row == 0) break;
           }
           result->success = true;
         }
         
         else if(isGreyAscii) {
           if(range >= 0x1000) goto error;
-          for(u32 row = height-1; row != 0; row -= 1) {
+          for(u32 row = height-1;; row -= 1) {
             for(u32 column = 0; column < width; column += 1) {
               
               u32 v = pnm_next_number(&stream);
@@ -145,6 +147,7 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
               u32 color = g | (g << 8) | (g << 16) | (0xff000000);
               pixels[column + row * width] = color;
             }
+            if(row == 0) break;
           }
           result->success = true;
         }
@@ -154,7 +157,7 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
           if(pnm_is_white(stream.ptr[stream.pos])) {
             stream.pos += 1;
           }
-          for(u32 row = height-1; row != 0; row -= 1) {
+          for(u32 row = height-1;; row -= 1) {
             for(u32 column = 0; column < width; column += 1) {
               if(stream.pos + 1 > stream.size) goto error;
               u32 v = stream.ptr[stream.pos];
@@ -165,6 +168,7 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
               u32 color = g | (g << 8) | (g << 16) | (0xff000000);
               pixels[column + row * width] = color;
             }
+            if(row == 0) break;
           }
           result->success = true;
         }
