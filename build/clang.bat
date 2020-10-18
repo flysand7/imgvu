@@ -11,7 +11,7 @@ REM PROJECT SETTINGS
 REM ================
 
 set use_asan=0
-set defines=-D_CRT_SECURE_NO_WARNINGS -D_UNICODE
+set defines=-D_CRT_SECURE_NO_WARNINGS -D_UNICODE -DUNICODE
 set mode=%debug%
 set lnk_libs=user32.lib gdi32.lib shell32.lib shlwapi.lib
 
