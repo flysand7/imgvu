@@ -224,33 +224,36 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
           if(pnm_is_white(stream.ptr[stream.pos])) {
             stream.pos += 1;
           }
-          u32 bitCounter = 0;
+          u32 bitCounter = 7;
           u32 lastByte = 0;
           u64 lastRowPos = stream.pos;
           u64 rowSize = (width+7)/8;
           loop {
-            u32 currentBit = (lastByte >> (7-bitCounter)) & 1;
-            u32 color = (currentBit != 0) ? (0xffffffff) : (0xff000000);
+            u32 currentBit = (lastByte >> bitCounter) & 1;
+            u32 color = (currentBit == 1) ? (0xff000000) : (0xffffffff);
             pixels[columnCounter + rowCounter * result->width] = color;
             
-            bitCounter += 1;
-            if(bitCounter == 8) {
-              bitCounter = 0;
-              if(stream.pos + 1 > stream.size) goto error;
+            if(bitCounter == 0) {
+              bitCounter = 8;
               stream.pos += 1;
+              
+              if(stream.pos >= stream.size) goto error;
               lastByte = stream.ptr[stream.pos];
             }
+            bitCounter -= 1;
             
             columnCounter += 1;
             if(columnCounter == width) {
-              columnCounter = 0;
               if(rowCounter == 0) break;
               rowCounter -= 1;
+              columnCounter = 0;
               
               lastRowPos += rowSize;
               stream.pos = lastRowPos;
+              bitCounter = 7;
+              
+              if(stream.pos >= stream.size) goto error;
               lastByte = stream.ptr[stream.pos];
-              bitCounter = 0;
             }
           }
           
