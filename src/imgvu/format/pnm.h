@@ -194,7 +194,7 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
             if(stream.pos + 1 > stream.size) goto error;
             byte character = stream.ptr[stream.pos];
             if(character == '0' || character == '1') {
-              u32 color = ((character == '1')?(0xffffffff):(0xff000000));
+              u32 color = ((character == '1')?(0xff000000):(0xffffffff));
               pixels[columnCounter + rowCounter * result->width] = color;
               columnCounter += 1;
               if(columnCounter == width) {
@@ -230,7 +230,7 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
           u64 rowSize = (width+7)/8;
           loop {
             u32 currentBit = (lastByte >> (7-bitCounter)) & 1;
-            u32 color = (currentBit != 0) ? (0xff000000) : (0xffffffff);
+            u32 color = (currentBit != 0) ? (0xffffffff) : (0xff000000);
             pixels[columnCounter + rowCounter * result->width] = color;
             
             bitCounter += 1;
