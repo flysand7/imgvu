@@ -1,4 +1,16 @@
 
+internal t_string16 win32_get_current_directory_mem(void) {
+  t_string16 result;
+  result.len = GetCurrentDirectory(0, 0);
+  
+  assert(result.len != 0);
+  result.ptr = malloc(result.len * sizeof(char16));
+  GetCurrentDirectory(result.len, result.ptr);
+  
+  result.len -= 1;
+  return(result);
+}
+
 internal t_string16 win32_make_path_wildcard_mem(t_string16 fullPath) {
   t_string16 result;
   result.len = fullPath.len+2;

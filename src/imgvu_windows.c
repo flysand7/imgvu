@@ -198,9 +198,7 @@ internal t_string16 win32_get_full_path_from_args(void) {
     return(fullPath);
   }
   else {
-    // TODO(bumbread): load current path from here 
-    // and return directory it points to.
-    t_string16 result = {0};
+    t_string16 result = win32_get_current_directory_mem();
     return(result);
   }
 }
