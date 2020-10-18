@@ -274,7 +274,7 @@ internal void win32_directory_scan(t_directory_state* dirState) {
       bool isDirectory = ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
       if(!isDirectory) {
         t_string16 shortName = char16_count((char16*)findData.cFileName);
-        t_string16 fullName = win32_get_file_path_mem(shortName);
+        t_string16 fullName = win32_get_file_path_from_relative_mem(dirState->dirPath, shortName);
         t_file* file = win32_directory_find_file(dirState, fullName);
         if(file == 0) {
           file = win32_directory_add(dirState, fullName);

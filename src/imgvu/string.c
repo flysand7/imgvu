@@ -37,7 +37,6 @@ internal t_string16 string_copy_mem(t_string16 string) {
   return(result);
 }
 
-#if 0
 internal t_string16 string_concatenate_mem(t_string16 first, t_string16 second) {
   t_string16 result;
   result.len = first.len + second.len;
@@ -54,7 +53,6 @@ internal t_string16 string_concatenate_mem(t_string16 first, t_string16 second) 
   result.ptr[result.len] = 0;
   return(result);
 }
-#endif
 
 internal bool string_begins_with(t_string16 string, t_string16 sub) {
   if(string.len < sub.len) return(false);

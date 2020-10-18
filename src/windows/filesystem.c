@@ -54,6 +54,16 @@ internal void win32_remove_trailing_backslash(t_string16* path) {
   }
 }
 
+internal t_string16 win32_get_file_path_from_relative_mem(t_string16 directory, t_string16 name) {
+  static_make_string16(slash, L"\\");
+  t_string16 pathWithSlash = string_concatenate_mem(directory, slash);
+  t_string16 path = string_concatenate_mem(pathWithSlash, name);
+  t_string16 fullPath = win32_get_file_path_mem(path);
+  free(path.ptr);
+  free(pathWithSlash.ptr);
+  return(fullPath);
+}
+
 internal t_string16 win32_get_path_to_file_mem(t_string16 fullPath) {
   t_string16 result = string_copy_mem(fullPath);
   u32 charIndex = fullPath.len - 1;
