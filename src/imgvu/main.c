@@ -14,22 +14,19 @@ internal t_image app_decode_file(t_image_data data) {
   return(result);
 }
 
-internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirState, t_button* keyboard, r32 dt) {
+internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirState, t_app_input* input, r32 dt) {
   if(!appState->initialized) {
     appState->initialized = true;
     appState->dirState = dirState;
   }
   
-  if(keyboard[VKEY_ESCAPE].pressed) return(true);
   debug_variable_unused(dt);
   
   {
-    bool left = keyboard[VKEY_LEFT].pressed;
-    bool right = keyboard[VKEY_RIGHT].pressed;
-    if(left && !right) {
+    if(input->prevImage && !input->nextImage) {
       platform_directory_previous_file(dirState);
     }
-    if(right && !left) {
+    if(input->nextImage && !input->prevImage) {
       platform_directory_next_file(dirState);
     }
   }

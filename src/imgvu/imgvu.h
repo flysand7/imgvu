@@ -38,7 +38,11 @@ wchar_t typedef char16;
 #define array_length(a) (sizeof(a) / sizeof((a)[0]))
 
 #include"string.c"
-#include"input.h"
+
+struct {
+  bool prevImage;
+  bool nextImage;
+} typedef t_app_input;
 
 // NOTE(bumbread): The services platform layer provides to the app.
 
@@ -82,7 +86,7 @@ struct {
   t_location imageLocation;
 } typedef t_app_state;
 
-internal bool app_update(t_app_state* appState, struct t_directory_state_s* state, t_button* keyboard, r32 dt);
+internal bool app_update(t_app_state* appState, struct t_directory_state_s* state, t_app_input* input, r32 dt);
 internal void app_draw(t_app_state* state);
 
 // NOTE(bumbread): the application interface realisation

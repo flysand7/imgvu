@@ -61,7 +61,7 @@ paint_window_gdi(t_window* window, HDC deviceContext) {
 // TODO(bumbread): get rid of as many globals as possible
 // without making the control flow confusing
 global bool g_running;
-global t_button g_keyboard[KEYBOARD_SIZE];
+global t_app_input g_app_input;
 global t_window g_window;
 global t_app_state g_app_state;
 
@@ -142,11 +142,9 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
       bool wasPressed = get_bit(lp, 30);
       bool isPressed = !get_bit(lp, 31);
       u64 keyCode = (u64)wp;
-      assert(keyCode < KEYBOARD_SIZE);
       if(wasPressed != isPressed) {
-        g_keyboard[keyCode].down = isPressed;
-        g_keyboard[keyCode].pressed = isPressed;
-        g_keyboard[keyCode].released = wasPressed;
+        if(keyCode == VK_LEFT) g_app_input.prevImage = true;
+        if(keyCode == VK_RIGHT) g_app_input.nextImage = true;
       }
       return(0);
     }
@@ -254,8 +252,7 @@ int main(void)
       if(!g_running) break;
     }
     
-    bool stop = app_update(&g_app_state, &directoryState, g_keyboard, dt);
-    stop |= (g_keyboard[VKEY_MENU].down && g_keyboard[VKEY_F4].pressed);
+    bool stop = app_update(&g_app_state, &directoryState, &g_app_input, dt);
     if(stop) break;
     
     win32_draw_app(&g_window, deviceContext);
@@ -272,10 +269,7 @@ int main(void)
       }
     }
     
-    for(u32 keyIndex = 0; keyIndex < KEYBOARD_SIZE; keyIndex += 1) {
-      g_keyboard[keyIndex].pressed = false;
-      g_keyboard[keyIndex].released = false;
-    }
+    g_app_input = (t_app_input) {0};
   }
   
   return(0);
