@@ -1,4 +1,11 @@
 
+#if defined(__TINYC__)
+BOOL GetFileSizeEx(HANDLE fileHandle, PLARGE_INTEGER res) {
+  res->LowPart = GetFileSize(fileHandle, &res->HighPart);
+  return((res->HighPart == 0) && (res->LowPart == INVALID_FILE_SIZE));
+}
+#endif
+
 internal t_string16 win32_get_current_directory_mem(void) {
   t_string16 result;
   result.len = GetCurrentDirectory(0, 0);
