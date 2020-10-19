@@ -139,11 +139,11 @@ internal void try_parse_bmp(t_image_data* file, t_image* result) {
             case(8): {
               
               u32 dataCounter = dataOffset;
-              u32 lastData = stream.ptr[dataCounter];
               u32 bitCounter = 6;
               
               loop {
                 
+                if(dataCounter >= stream.size) goto error;
                 u32 bitValues = (dataCounter >> bitCounter) & ((1<<bitsPerPixel)-1);
                 u32 color = palette[bitValues];
                 result->pixels[rowCounter*result->width + columnCounter] = color;
@@ -156,15 +156,11 @@ internal void try_parse_bmp(t_image_data* file, t_image* result) {
                   
                   bitCounter = 8;
                   dataCounter = rowCounter * rowSize;
-                  if(dataCounter >= stream.size) goto error;
-                  lastData = stream.ptr[dataCounter];
                 }
                 
                 if(bitCounter == 0) {
                   bitCounter = 8;
                   dataCounter += 1;
-                  if(dataCounter >= stream.size) goto error;
-                  lastData = stream.ptr[dataCounter];
                 }
                 
                 bitCounter -= bitsPerPixel;

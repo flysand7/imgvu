@@ -225,22 +225,14 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
             stream.pos += 1;
           }
           u32 bitCounter = 7;
-          u32 lastByte = 0;
           u64 lastRowPos = stream.pos;
           u64 rowSize = (width+7)/8;
           loop {
+            if(stream.pos >= stream.size) goto error;
+            u32 lastByte = stream.ptr[stream.pos];
             u32 currentBit = (lastByte >> bitCounter) & 1;
             u32 color = (currentBit == 1) ? (0xff000000) : (0xffffffff);
             pixels[columnCounter + rowCounter * result->width] = color;
-            
-            if(bitCounter == 0) {
-              bitCounter = 8;
-              stream.pos += 1;
-              
-              if(stream.pos >= stream.size) goto error;
-              lastByte = stream.ptr[stream.pos];
-            }
-            bitCounter -= 1;
             
             columnCounter += 1;
             if(columnCounter == width) {
@@ -248,13 +240,17 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
               rowCounter -= 1;
               columnCounter = 0;
               
+              bitCounter = 8;
+              
               lastRowPos += rowSize;
               stream.pos = lastRowPos;
-              bitCounter = 7;
-              
-              if(stream.pos >= stream.size) goto error;
-              lastByte = stream.ptr[stream.pos];
             }
+            
+            if(bitCounter == 0) {
+              bitCounter = 8;
+              stream.pos += 1;
+            }
+            bitCounter -= 1;
           }
           
           result->success = true;
