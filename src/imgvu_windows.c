@@ -190,6 +190,7 @@ internal t_string16 win32_get_full_path_from_args(void) {
     filePath = char16_copy_mem(args[1]);
     assert(filePath.ptr != 0);
     assert(filePath.len != 0);
+    
     t_string16 fullPath = win32_get_file_path_mem(filePath);
     win32_remove_trailing_backslash(&fullPath);
     free(filePath.ptr);
