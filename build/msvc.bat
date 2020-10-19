@@ -12,9 +12,6 @@ set defines=-D_CRT_SECURE_NO_WARNINGS -D_UNICODE -DUNICODE
 set mode=%debug%
 set lnk_libs=kernel32.lib user32.lib gdi32.lib shell32.lib shlwapi.lib
 
-set input_file_name=imgvu_windows.c
-set output_file_name=imgvu
-
 REM =================
 REM COMPILATION SETUP
 REM =================
@@ -29,5 +26,5 @@ set cmp_flags=%cmp_flags% -Fd"%output_file_name%.pdb"
 
 set lnk_flags=-nologo -incremental:no -debug
 
-cl %cmp_flags% "src\%input_file_name%"
+cl %cmp_flags% "%input_file_name%"
 link %lnk_flags% "%output_file_name%.obj" %lnk_libs%
