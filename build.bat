@@ -1,6 +1,13 @@
 @echo off
-call build\clang.bat
-rem call build\msvc.bat
+
+set c=%1
+echo %1
+
+if not defined c set c=clang
+
+if %c% == clang (call build\clang.bat)^
+else if %c% == msvc (call build\msvc.bat)^
+else if %c% == tcc (call build\tcc-c.bat)
 
 del *.ilk 2> nul
 del *.obj 2> nul
