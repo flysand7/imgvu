@@ -2,8 +2,8 @@
 // bumbread's imgvu
 //
 
-#include"format/bmp.h"
-#include"format/pnm.h"
+#include"format/bmp.c"
+#include"format/pnm.c"
 
 internal t_image app_decode_file(t_image_data data) {
   t_image result = {0};
