@@ -260,6 +260,8 @@ internal void try_parse_bmp(t_image_data* file, t_image* result) {
     }
   }
   
+  return;
+  
   error:
   result->success = false;
   if(result->pixels) free(result->pixels);
