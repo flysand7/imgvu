@@ -1,4 +1,5 @@
 test/**
+build.bat
 *.pdb
 *.exe
 
@@ -14,4 +15,4 @@ test/**
 *.raw
 *.tga
 *.ico
-*.gifbuild.bat 
+*.gif
