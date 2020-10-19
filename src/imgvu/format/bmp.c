@@ -170,6 +170,9 @@ internal void try_parse_bmp(t_image_data* file, t_image* result) {
                 bitCounter -= bitsPerPixel;
               }
               
+              result->success = true;
+              return;
+              
             } break;
             case(16): {
               
@@ -199,6 +202,9 @@ internal void try_parse_bmp(t_image_data* file, t_image* result) {
                 }
               }
               
+              result->success = true;
+              return;
+              
             } break;
             case(24): {
               
@@ -225,6 +231,9 @@ internal void try_parse_bmp(t_image_data* file, t_image* result) {
                 }
               }
               
+              result->success = true;
+              return;
+              
             } break;
             case(32): {
               
@@ -250,6 +259,8 @@ internal void try_parse_bmp(t_image_data* file, t_image* result) {
                 }
               }
               
+              result->success = true;
+              return;
               
             } break;
             
@@ -259,8 +270,6 @@ internal void try_parse_bmp(t_image_data* file, t_image* result) {
       }
     }
   }
-  
-  return;
   
   error:
   result->success = false;
