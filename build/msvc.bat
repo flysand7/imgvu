@@ -8,7 +8,7 @@ REM ================
 REM PROJECT SETTINGS
 REM ================
 
-set defines=-D_CRT_SECURE_NO_WARNINGS -D_UNICODE
+set defines=-D_CRT_SECURE_NO_WARNINGS -D_UNICODE -DUNICODE
 set mode=%debug%
 set lnk_libs=kernel32.lib user32.lib gdi32.lib shell32.lib shlwapi.lib
 
