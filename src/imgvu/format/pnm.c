@@ -267,9 +267,10 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
   
   error: 
   result->success = false;
+  if(result->pixels) free(result->pixels);
+  result->pixels = 0;
   result->width = 0;
   result->height = 0;
-  if(result->pixels) free(result->pixels);
   return;
 }
 
