@@ -61,7 +61,7 @@ paint_window_gdi(t_window* window, HDC deviceContext) {
 // TODO(bumbread): get rid of as many globals as possible
 // without making the control flow confusing
 global bool g_running;
-global t_button g_keyboard[0x100];
+global t_button g_keyboard[KEYBOARD_SIZE];
 global t_window g_window;
 global t_app_state g_app_state;
 
