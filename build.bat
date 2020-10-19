@@ -1,9 +1,9 @@
 @echo off
 
 set c=%1
-echo %1
 
 if not defined c set c=clang
+echo %c%
 
 if %c% == clang (call build\clang.bat)^
 else if %c% == msvc (call build\msvc.bat)^
