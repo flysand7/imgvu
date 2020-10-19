@@ -220,7 +220,7 @@ internal void try_parse_bmp(t_image_data* file, t_image* result) {
                 dataCounter += 3;
                 if(dataCounter >= stream.size) goto error;
                 
-                u32 color = (r) | (g<<8) | (b<<24) | (0xff000000);
+                u32 color = (r) | (g<<8) | (b<<16) | (0xff000000);
                 result->pixels[columnCounter + rowCounter * result->width] = color;
                 
                 columnCounter += 1;
@@ -248,7 +248,7 @@ internal void try_parse_bmp(t_image_data* file, t_image* result) {
                 dataCounter += 4;
                 if(dataCounter >= stream.size) goto error;
                 
-                u32 color = (r) | (g<<8) | (b<<24) | (a<<24);
+                u32 color = (r) | (g<<8) | (b<<16) | (a<<24);
                 result->pixels[columnCounter + rowCounter * result->width] = color;
                 
                 columnCounter += 1;
