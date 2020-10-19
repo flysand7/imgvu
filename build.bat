@@ -8,6 +8,9 @@ echo %c%
 set input_file_name=src\imgvu_windows.c
 set output_file_name=imgvu
 
+del %output_file_name%.exe 2> nul
+del %output_file_name%.pdb 2> nul
+
 if %c% == clang (call build\clang.bat)^
 else if %c% == msvc (call build\msvc.bat)^
 else if %c% == tcc (call build\tcc-c.bat)
