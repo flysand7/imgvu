@@ -143,8 +143,8 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
       bool isPressed = !get_bit(lp, 31);
       u64 keyCode = (u64)wp;
       if(wasPressed != isPressed) {
-        if(keyCode == VK_LEFT) g_app_input.prevImage = true;
-        if(keyCode == VK_RIGHT) g_app_input.nextImage = true;
+        if(keyCode == VK_LEFT) g_app_input.prevImage = isPressed;
+        if(keyCode == VK_RIGHT) g_app_input.nextImage = isPressed;
       }
       return(0);
     }
