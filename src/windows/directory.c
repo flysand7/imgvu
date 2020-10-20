@@ -98,42 +98,24 @@ internal bool win32_cache_add(t_directory_state* dirState, u32 fileIndex) {
   assert(fileIndex < dirState->fileCount);
   
   t_file* file = dirState->files + fileIndex;
-  assert(!file->cached);
+  assert(file->cached == false);
   assert(file->data.ptr == 0);
   assert(file->image.pixels == 0);
   
   // NOTE(bumbread): loading into the cache
-  HANDLE fileHandle = CreateFileW((LPCWSTR)file->data.filename.ptr, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
-  if(fileHandle != INVALID_HANDLE_VALUE) {
-    LARGE_INTEGER fileSize;
-    bool result = GetFileSizeEx(fileHandle, &fileSize);
-    assert(result);
-    assert(fileSize.LowPart != 0);
-    void* fileData = malloc((u32)fileSize.LowPart);
-    DWORD bytesRead = 0;
-    
-    result = ReadFile(fileHandle, fileData, fileSize.LowPart, &bytesRead, 0);
-    assert(result);
-    CloseHandle(fileHandle);
-    assert((DWORD)fileSize.LowPart == bytesRead);
-    
-    // NOTE(bumbread): updaing the cache
-    file->data.ptr = fileData;
-    file->data.size = (u32)fileSize.LowPart;
+  file->data = win32_load_file(file->data.filename);
+  if(file->data.size != 0) {
     file->image = app_decode_file(file->data);
     if(file->image.success == true) {
       file->cached = true;
       file->cacheLoads += 1;
     }
-    else {
-      win32_directory_remove(dirState, fileIndex);
-      return(true);
-    }
   }
-  else {
+  else if(file->cached == false) {
     win32_directory_remove(dirState, fileIndex);
     return(true);
   }
+  
   return(false);
 }
 

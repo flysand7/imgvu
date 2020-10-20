@@ -102,7 +102,6 @@ internal t_string16 win32_get_path_mem(t_string16 fullPath) {
 }
 
 #if 0
-
 internal t_string16 win32_get_file_extension(t_string16 name) {
   u32 charIndex = name.len;
   t_string16 result = {0};
@@ -148,3 +147,27 @@ internal bool directory_contains(t_string16 root, t_string16 dir) {
   return(string_begins_with(dir, root));
 }
 #endif
+
+internal t_file_data win32_load_file(t_string16 fullFilename) {
+  t_file_data fileData = {0};
+  fileData.filename = fullFilename;
+  
+  HANDLE fileHandle = CreateFileW((LPCWSTR)fileData.filename.ptr, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+  if(fileHandle != INVALID_HANDLE_VALUE) {
+    LARGE_INTEGER fileSize;
+    bool result = GetFileSizeEx(fileHandle, &fileSize);
+    assert(result);
+    assert(fileSize.LowPart != 0);
+    fileData.ptr = malloc((u32)fileSize.LowPart);
+    DWORD bytesRead = 0;
+    
+    result = ReadFile(fileHandle, fileData.ptr, fileSize.LowPart, &bytesRead, 0);
+    assert(result);
+    CloseHandle(fileHandle);
+    assert((DWORD)fileSize.LowPart == bytesRead);
+    
+    fileData.size = (u32)fileSize.LowPart;
+  }
+  
+  return(fileData);
+}
