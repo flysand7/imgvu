@@ -2,7 +2,6 @@
 struct t_directory_state_s;
 internal void platform_draw_image(t_location* loc, t_image* image);
 
-
 internal void platform_directory_set(t_directory_state* dirState, t_string16 path) {
   if(!string_compare(path, dirState->dirPath)) {
     win32_directory_clear(dirState);
@@ -124,4 +123,28 @@ internal t_file_data platform_load_file(t_string16 fullFilename) {
   }
   
   return(fileData);
+}
+
+internal t_string16 platform_get_config_filename(void) {
+  DWORD stringSize = 0;
+  if(!GetAllUsersProfileDirectoryW(0, &stringSize)) {
+    t_string16 directory;
+    directory.len = stringSize-1;
+    directory.ptr = malloc(stringSize * sizeof(char16));
+    if(GetAllUsersProfileDirectoryW((LPWSTR)directory.ptr, &stringSize)) {
+      win32_remove_trailing_backslash(&directory);
+      
+      static_make_string16(filename, L"\\imgvu_config.txt");
+      t_string16 fullName = string_concatenate_mem(directory, filename);
+      
+      return(fullName);
+    }
+    else {
+      assert(0);
+    }
+  }
+  else {
+    assert(0);
+  }
+  return((t_string16) {0});
 }

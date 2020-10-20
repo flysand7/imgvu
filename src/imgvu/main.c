@@ -5,6 +5,8 @@
 #include"format/bmp.c"
 #include"format/pnm.c"
 
+#include"config.c"
+
 internal t_image app_decode_file(t_file_data data) {
   t_image result = {0};
   result.success = false;
@@ -16,19 +18,20 @@ internal t_image app_decode_file(t_file_data data) {
 
 internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirState, t_app_input* input, r32 dt) {
   if(!appState->initialized) {
+    app_load_config(&appState->appConfig, platform_get_config_filename());
+    
     appState->initialized = true;
     appState->dirState = dirState;
   }
   
   debug_variable_unused(dt);
   
-  {
-    if(input->prevImage && !input->nextImage) {
-      platform_directory_previous_file(dirState);
-    }
-    if(input->nextImage && !input->prevImage) {
-      platform_directory_next_file(dirState);
-    }
+  
+  if(input->prevImage && !input->nextImage) {
+    platform_directory_previous_file(dirState);
+  }
+  if(input->nextImage && !input->prevImage) {
+    platform_directory_next_file(dirState);
   }
   
   return(false);

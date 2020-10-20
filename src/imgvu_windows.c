@@ -15,6 +15,7 @@
 #define SORTPP_PASS
 #include<Windows.h>
 #include<Shlwapi.h> // PathFileExistsW
+#include<UserEnv.h> // GetAllUsersProfileDirectoryW
 #pragma warning(pop)
 
 struct {
