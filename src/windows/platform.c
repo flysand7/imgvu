@@ -101,3 +101,27 @@ internal void platform_draw_image(t_location* loc, t_image* image) {
     targetRow += g_window.clientWidth;
   }
 }
+
+internal t_file_data platform_load_file(t_string16 fullFilename) {
+  t_file_data fileData = {0};
+  fileData.filename = fullFilename;
+  
+  HANDLE fileHandle = CreateFileW((LPCWSTR)fileData.filename.ptr, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+  if(fileHandle != INVALID_HANDLE_VALUE) {
+    LARGE_INTEGER fileSize;
+    bool result = GetFileSizeEx(fileHandle, &fileSize);
+    assert(result);
+    assert(fileSize.LowPart != 0);
+    fileData.ptr = malloc((u32)fileSize.LowPart);
+    DWORD bytesRead = 0;
+    
+    result = ReadFile(fileHandle, fileData.ptr, fileSize.LowPart, &bytesRead, 0);
+    assert(result);
+    CloseHandle(fileHandle);
+    assert((DWORD)fileSize.LowPart == bytesRead);
+    
+    fileData.size = (u32)fileSize.LowPart;
+  }
+  
+  return(fileData);
+}

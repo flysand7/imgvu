@@ -103,7 +103,7 @@ internal bool win32_cache_add(t_directory_state* dirState, u32 fileIndex) {
   assert(file->image.pixels == 0);
   
   // NOTE(bumbread): loading into the cache
-  file->data = win32_load_file(file->data.filename);
+  file->data = platform_load_file(file->data.filename);
   if(file->data.size != 0) {
     file->image = app_decode_file(file->data);
     if(file->image.success == true) {
