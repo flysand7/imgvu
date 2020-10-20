@@ -145,6 +145,12 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
       if(wasPressed != isPressed) {
         if(keyCode == VK_LEFT) g_app_input.prevImage = isPressed;
         if(keyCode == VK_RIGHT) g_app_input.nextImage = isPressed;
+        
+        if(keyCode == VK_ESCAPE) g_running = false;
+        if(keyCode == VK_F4) {
+          bool altPressed = GetKeyState(VK_MENU);
+          if(altPressed) g_running = false;
+        }
       }
       return(0);
     }
