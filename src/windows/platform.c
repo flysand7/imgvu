@@ -125,6 +125,21 @@ internal t_file_data platform_load_file(t_string16 fullFilename) {
   return(fileData);
 }
 
+internal bool platform_write_file(t_file_data file) {
+  HANDLE fileHandle = CreateFileW((LPCWSTR)fileData.filename.ptr, GENERIC_WRITE, 0, 0, CREATE_NEW, 0, 0);
+  if(fileHandle != INVALID_HANDLE_VALUE) {
+    DWORD bytesWritten;
+    bool result = WriteFile(fileHandle, file.ptr, file.size, bytesWritten, false);
+    if(result == true) {
+      if(bytesWritten == (DWORD)file.size) {
+        return(true);
+      }
+    } 
+  }
+  
+  return(false);
+}
+
 internal t_string16 platform_get_config_filename(void) {
   DWORD stringSize = 0;
   if(!GetAllUsersProfileDirectoryW(0, &stringSize)) {
