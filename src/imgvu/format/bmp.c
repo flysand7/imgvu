@@ -65,6 +65,7 @@ internal void try_parse_bmp(t_image_data* file, t_image* result) {
   stream.ptr = (byte*)file->ptr;
   stream.pos = 0;
   stream.size = file->size;
+  stream.error = false;
   
   if(stream.size >= 2) {
     if(stream.ptr[0] == 'B' && stream.ptr[1] == 'M') {

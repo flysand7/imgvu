@@ -67,6 +67,7 @@ internal void try_parse_pnm(t_image_data* data, t_image* result) {
   stream.ptr = (byte*)data->ptr;
   stream.pos = 0;
   stream.size = data->size;
+  stream.error = false;
   
   if(stream.size > 2) {
     if(stream.ptr[0] == 'P') {
