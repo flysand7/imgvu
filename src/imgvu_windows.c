@@ -17,9 +17,6 @@
 #include<Shlwapi.h> // PathFileExistsW
 #pragma warning(pop)
 
-#include"windows/filesystem.c"
-#include"windows/directory.c"
-
 struct {
   HWND handle;
   u32 clientWidth;
@@ -58,12 +55,17 @@ paint_window_gdi(t_window* window, HDC deviceContext) {
                 window->pixels, &bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
 }
 
+#include"windows/filesystem.c"
+#include"windows/directory.c"
+
 // TODO(bumbread): get rid of as many globals as possible
 // without making the control flow confusing
 global bool g_running;
 global t_app_input g_app_input;
 global t_window g_window;
 global t_app_state g_app_state;
+
+#include"windows/platform.c"
 
 internal void
 win32_draw_app(t_window* window, HDC deviceContext) {
@@ -74,59 +76,6 @@ win32_draw_app(t_window* window, HDC deviceContext) {
   }
   app_draw(&g_app_state);
   paint_window_gdi(window, deviceContext);
-}
-
-internal void platform_draw_image(t_location* loc, t_image* image) {
-  i32 maxWidth = (i32)g_window.clientWidth;
-  i32 maxHeight = (i32)g_window.clientHeight;
-  
-  i32 xPosition = (i32)loc->posX;
-  i32 yPosition = (i32)loc->posY;
-  i32 width = (i32)image->width;
-  i32 height = (i32)image->height;
-  
-  if(xPosition >= maxWidth) return;
-  if(yPosition >= maxHeight) return;
-  if(xPosition + maxWidth <= 0) return;
-  if(yPosition + maxHeight <= 0) return;
-  
-  if(xPosition < 0) { 
-    width += xPosition;
-    xPosition = 0;
-  }
-  if(yPosition < 0) {
-    height += yPosition;
-    yPosition = 0;
-  }
-  if(xPosition + width > maxWidth) {
-    i32 over = xPosition + width - maxWidth;
-    assert(over > 0);
-    width -= over;
-  }
-  if(yPosition + height > maxHeight) {
-    i32 over = yPosition + height - maxHeight;
-    assert(over > 0);
-    height -= over;
-  }
-  
-  assert(xPosition >= 0);
-  assert(yPosition >= 0);
-  assert(xPosition + width <= maxWidth);
-  assert(yPosition + height <= maxHeight);
-  
-  u32* targetRow = g_window.pixels + (u32)yPosition*g_window.clientWidth + (u32)xPosition;
-  u32* sourceRow = image->pixels;
-  for(i32 row = 0; row < height; row += 1) {
-    u32* targetPixel = targetRow;
-    u32* sourcePixel = sourceRow;
-    for(i32 column = 0; column < width; column += 1) {
-      *targetPixel = *sourcePixel;
-      targetPixel += 1;
-      sourcePixel += 1;
-    }
-    sourceRow += image->width;
-    targetRow += g_window.clientWidth;
-  }
 }
 
 #define get_bit(num, bit) ( ((num) >> (bit)) & 1)
