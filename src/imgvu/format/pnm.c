@@ -59,7 +59,7 @@ internal u32 pnm_next_number(struct t_pnm_stream* stream) {
   return(0);
 }
 
-internal void try_parse_pnm(t_image_data* data, t_image* result) {
+internal void try_parse_pnm(t_file_data* data, t_image* result) {
   assert(result->pixels == 0);
   if(result->success) return;
   

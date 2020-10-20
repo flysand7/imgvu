@@ -50,7 +50,7 @@ struct {
   t_string16 filename;
   u64 size;
   void* ptr;
-} typedef t_image_data;
+} typedef t_file_data;
 
 struct {
   bool success;

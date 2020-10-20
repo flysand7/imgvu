@@ -58,7 +58,7 @@ internal i32 bmp_read_i4(struct t_bmp_stream* stream) {
   return(result);
 }
 
-internal void try_parse_bmp(t_image_data* file, t_image* result) {
+internal void try_parse_bmp(t_file_data* file, t_image* result) {
   if(result->success) return;
   
   struct t_bmp_stream stream;

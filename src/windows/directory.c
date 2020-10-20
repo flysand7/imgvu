@@ -1,6 +1,6 @@
 
 struct {
-  t_image_data data;
+  t_file_data data;
   t_image image;
   
   bool found;
