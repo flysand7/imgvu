@@ -53,6 +53,10 @@ internal void token_push(struct t_token_list* list, struct t_token token) {
   list->tokensCount += 1;
 }
 
+internal void token_pop(struct t_token_list* list, u32 index) {
+  
+}
+
 internal void in_range(char x, char y, char c) {
   return(c >= x && c <= y);
 }
@@ -61,7 +65,7 @@ internal void is_operator(char c) {
   return(c=='+' || c=='-' || c=='*' || c=='/' || c=='=');
 }
 
-internal struct t_token_list app_lex_config(struct t_app_config* appConfig, t_file_data data) {
+internal struct t_token_list config_lex(struct t_app_config* appConfig, t_file_data data) {
   char* characters = (char*)data->ptr;
   u32 pos = 0;
   struct t_token currentToken = {0};
@@ -305,8 +309,16 @@ internal struct t_token_list app_lex_config(struct t_app_config* appConfig, t_fi
   }
 }
 
-internal bool app_parse_config(struct t_token_list tokenList, t_app_config* appConfig) {
+// NOTE(bumbread): produce reverse polish notation for given input
+internal struct t_token_list config_produce_reverse_reverse(struct t_token_list input) {
+  struct t_token_list output = {0};
+  struct t_token_list operatorStack = {0};
   
+  
+}
+
+internal void config_parse(struct t_token_list tokenList, t_app_config* appConfig) {
+  struct t_token_list reverse = config_produce_reverse(tokenList);
 }
 
 internal void app_load_config(struct t_app_config* appConfig, t_string16 filename) {
