@@ -14,6 +14,8 @@ internal void app_load_default_config(struct t_app_config* appConfig) {
 }
 
 enum t_token_type {
+  TYPE_ERROR,
+  
   TYPE_INTEGER,
   TYPE_STRING,
   TYPE_FLOAT,
@@ -26,12 +28,11 @@ enum t_token_type {
   
   TYPE_OPERATOR,
   
-  TYPE_ERROR,
   TYPE_EOF,
 };
 
 struct t_token {
-  u32 start;
+  char* ptr;
   u32 len;
   enum t_token_type type;
 };
@@ -54,7 +55,14 @@ internal void token_push(struct t_token_list* list, struct t_token token) {
 }
 
 internal void token_pop(struct t_token_list* list, u32 index) {
-  
+  list->tokensCount -= 1;
+  list->tokens[list->tokensCount] = {0};
+}
+
+internal void token_list_free(struct t_token_list list) {
+  if(list->tokens != 0) {
+    free(list->tokens);
+  }
 }
 
 internal void in_range(char x, char y, char c) {
@@ -72,7 +80,7 @@ internal struct t_token_list config_lex(struct t_app_config* appConfig, t_file_d
   struct t_token_list list = {0};
   
   state_main: {
-    currentToken.pos = pos;
+    currentToken.ptr = characters + pos;
     char currentChar = characters[pos];
     
     if(currentChar == 0) {
@@ -309,16 +317,80 @@ internal struct t_token_list config_lex(struct t_app_config* appConfig, t_file_d
   }
 }
 
-// NOTE(bumbread): produce reverse polish notation for given input
-internal struct t_token_list config_produce_reverse_reverse(struct t_token_list input) {
-  struct t_token_list output = {0};
-  struct t_token_list operatorStack = {0};
-  
-  
+struct t_identifier {
+  union {
+    int value_i;
+    float value_f;
+    struct {
+      u32 arrayLen;
+      struct t_token* array;
+    };
+    struct {
+      u32 stringLen;
+      char* string;
+    };
+  };
+};
+
+struct t_identifier_list {
+  t_identifier* identifiers;
+  u32 count;
+  u32 alloc;
+};
+
+internal void identifier_push(struct t_identifier_list* list, struct t_identifier identifier) {
+  if(list->count + 1 > list->alloc) {
+    list->alloc *= 2;
+    if(list->alloc == 0) list->alloc = 1;
+    list->identifiers = realloc(list->identifiers, list->alloc * sizeof(struct t_identifier));
+  }
+  list->identifiers[list->count] = identifier;
+  list->count += 1;
 }
 
-internal void config_parse(struct t_token_list tokenList, t_app_config* appConfig) {
-  struct t_token_list reverse = config_produce_reverse(tokenList);
+internal bool compare_identifier_names(struct t_identifier a, struct t_identifier b) {
+  if(a.len != b.len) return(false);
+  char* as = a.ptr;
+  char* bs = b.ptr;
+  for(u32 i = 0; i < a.len; i += 1) {
+    assert(*as);
+    assert(*bs);
+    if(*as != *bs) return(false);
+    as += 1;
+    bs += 1;
+  }
+  return(true);
+}
+
+internal void config_parse(struct t_app_config* appConfig, struct t_token_list tokenList) {
+  t_identifier_list identifiers = {0};
+  
+  u32 index = 0;
+  loop {
+    if(index >= tokenList.tokensCount) goto error;
+    t_token identifier = tokenList.tokens[index];
+    if(identifier.type != TYPE_IDENTIFIER) goto error;
+    index += 1;
+    
+    if(index >= tokenList.tokensCount) goto error;
+    t_token assignmentOperator = tokenList.tokens[index];
+    index += 1;
+    if(assignmentOperator.type != TYPE_OPERATOR) goto error;
+    if(assignmentOperator.len != 1) goto error;
+    if(appConfig->assignmentOperator.ptr[0] != '=')  goto error;
+    
+    if(index >= tokenList.tokensCount) goto error;
+    t_token value = t_token assignmentOperator = tokenList.tokens[index];
+    if(value.type < TYPE_INTEGER || value.type > TYPE_IDENTIFIER) goto error;
+    index += 1;
+    
+    
+  }
+  
+  return;
+  error: {
+    appConfig->error = true;
+  }
 }
 
 internal void app_load_config(struct t_app_config* appConfig, t_string16 filename) {
