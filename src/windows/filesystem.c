@@ -34,7 +34,7 @@ internal t_string16 win32_get_file_path_mem(t_string16 name) {
   if(!prepend.len) prepend = char16_copy(L"\\\\?\\");
   
   // NOTE(bumbread): making sure there's no \\?\.
-  if(string_begins_with(name, prepend)) {
+  if(string16_begins_with(name, prepend)) {
     name.len -= 4;
     name.ptr += 4;
   }
@@ -63,8 +63,8 @@ internal void win32_remove_trailing_backslash(t_string16* path) {
 
 internal t_string16 win32_get_file_path_from_relative_mem(t_string16 directory, t_string16 name) {
   static_make_string16(slash, L"\\");
-  t_string16 pathWithSlash = string_concatenate_mem(directory, slash);
-  t_string16 path = string_concatenate_mem(pathWithSlash, name);
+  t_string16 pathWithSlash = string16_concatenate_mem(directory, slash);
+  t_string16 path = string16_concatenate_mem(pathWithSlash, name);
   t_string16 fullPath = win32_get_file_path_mem(path);
   free(path.ptr);
   free(pathWithSlash.ptr);
@@ -72,7 +72,7 @@ internal t_string16 win32_get_file_path_from_relative_mem(t_string16 directory, 
 }
 
 internal t_string16 win32_get_path_to_file_mem(t_string16 fullPath) {
-  t_string16 result = string_copy_mem(fullPath);
+  t_string16 result = string16_copy_mem(fullPath);
   u32 charIndex = fullPath.len - 1;
   loop {
     if(result.ptr[charIndex] == L'\\') {
@@ -95,7 +95,7 @@ internal t_string16 win32_get_path_mem(t_string16 fullPath) {
   HANDLE searchHandle = FindFirstFileW((LPCWSTR)fullPath.ptr, &findData);
   if(searchHandle != INVALID_HANDLE_VALUE) {
     bool isDirectory = ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
-    if(isDirectory) result = string_copy_mem(fullPath);
+    if(isDirectory) result = string16_copy_mem(fullPath);
     else result = win32_get_path_to_file_mem(fullPath);
   }
   return(result);

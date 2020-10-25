@@ -235,7 +235,7 @@ internal void win32_directory_clear(t_directory_state* dirState) {
 
 internal t_file* win32_directory_find_file(t_directory_state* dirState, t_string16 filename) {
   for(u32 fileIndex = 0; fileIndex < dirState->fileCount; fileIndex += 1) {
-    if(string_compare(dirState->files[fileIndex].data.filename, filename)) {
+    if(string16_compare(dirState->files[fileIndex].data.filename, filename)) {
       return(dirState->files + fileIndex);
     }
   }

@@ -3,7 +3,7 @@ struct t_directory_state_s;
 internal void platform_draw_image(t_location* loc, t_image* image);
 
 internal void platform_directory_set(t_directory_state* dirState, t_string16 path) {
-  if(!string_compare(path, dirState->dirPath)) {
+  if(!string16_compare(path, dirState->dirPath)) {
     win32_directory_clear(dirState);
     
     if(dirState->dirSearchPath.ptr) free(dirState->dirSearchPath.ptr);
@@ -162,7 +162,7 @@ internal t_string16 platform_get_config_filename(void) {
       win32_remove_trailing_backslash(&directory);
       
       static_make_string16(filename, L"\\imgvu_config.txt");
-      t_string16 fullName = string_concatenate_mem(directory, filename);
+      t_string16 fullName = string16_concatenate_mem(directory, filename);
       
       return(fullName);
     }
