@@ -222,6 +222,12 @@ internal struct t_token_list config_lex(struct t_app_config* appConfig, t_file_d
       pos += 1;
       goto state_integer_bin;
     }
+    if(currentChar == '.') {
+      currentToken.type = TYPE_FLOAT;
+      currentToken.len += 1;
+      pos += 1;
+      goto state_float;
+    }
     else {
       token_push(&list, currentToken);
       goto state_main;
@@ -318,8 +324,10 @@ internal struct t_token_list config_lex(struct t_app_config* appConfig, t_file_d
 }
 
 struct t_identifier {
+  t_token name;
+  t_token_type type;
   union {
-    int value_i;
+    u64 value_i;
     float value_f;
     struct {
       u32 arrayLen;
@@ -336,61 +344,251 @@ struct t_identifier_list {
   t_identifier* identifiers;
   u32 count;
   u32 alloc;
+  bool error;
 };
 
-internal void identifier_push(struct t_identifier_list* list, struct t_identifier identifier) {
+internal struct t_identifier* identifier_push(struct t_identifier_list* list, struct t_identifier identifier) {
   if(list->count + 1 > list->alloc) {
     list->alloc *= 2;
     if(list->alloc == 0) list->alloc = 1;
     list->identifiers = realloc(list->identifiers, list->alloc * sizeof(struct t_identifier));
   }
-  list->identifiers[list->count] = identifier;
+  struct t_identifier* result = list->identifiers + list->count;
+  *result = identifier;
   list->count += 1;
+  return(result);
 }
 
-internal bool compare_identifier_names(struct t_identifier a, struct t_identifier b) {
+internal bool compare_tokens(struct t_token a, struct t_token b) {
   if(a.len != b.len) return(false);
-  char* as = a.ptr;
-  char* bs = b.ptr;
   for(u32 i = 0; i < a.len; i += 1) {
-    assert(*as);
-    assert(*bs);
-    if(*as != *bs) return(false);
-    as += 1;
-    bs += 1;
+    if(a.ptr[i] != b.ptr[i]) return(false);
   }
   return(true);
 }
 
-internal void config_parse(struct t_app_config* appConfig, struct t_token_list tokenList) {
-  t_identifier_list identifiers = {0};
+internal struct t_identifier* find_identifier(struct t_identifier_list* list, struct t_token name) {
+  for(u32 i = 0; i < list.count; i += 1) {
+    if(compare_tokens(list.identifiers[i].name, name)) {
+      return(list.identifiers + i);
+    }
+  }
+  return(0);
+}
+
+internal struct t_identifier_list config_parse_identifiers(struct t_token_list tokenList) {
+  struct t_identifier_list identifiers = {0};
   
   u32 index = 0;
   loop {
     if(index >= tokenList.tokensCount) goto error;
-    t_token identifier = tokenList.tokens[index];
-    if(identifier.type != TYPE_IDENTIFIER) goto error;
+    struct t_token name = tokenList.tokens[index];
+    if(name.type != TYPE_IDENTIFIER) goto error;
     index += 1;
     
+    struct t_identifier* target = find_identifier(&list, identifier.name);
+    if(!target) {
+      struct t_identifier identifier = {0};
+      identifier.name = name;
+      identifier.type = value.type;
+      target = identifier_push(&list, identifier);
+    }
+    
     if(index >= tokenList.tokensCount) goto error;
-    t_token assignmentOperator = tokenList.tokens[index];
+    struct t_token assignmentOperator = tokenList.tokens[index];
     index += 1;
     if(assignmentOperator.type != TYPE_OPERATOR) goto error;
     if(assignmentOperator.len != 1) goto error;
-    if(appConfig->assignmentOperator.ptr[0] != '=')  goto error;
+    if(assignmentOperator.ptr[0] != '=')  goto error;
     
     if(index >= tokenList.tokensCount) goto error;
-    t_token value = t_token assignmentOperator = tokenList.tokens[index];
+    struct t_token value = t_token assignmentOperator = tokenList.tokens[index];
     if(value.type < TYPE_INTEGER || value.type > TYPE_IDENTIFIER) goto error;
     index += 1;
     
-    
+    switch(value.type) {
+      case(TYPE_INTEGER): {
+        
+        u64 base = 10;
+        u64 result = 0;
+        if(value.len >= 2) {
+          if(value.ptr[1] == 'x') {
+            base = 16;
+          }
+          else if(value.ptr[1] == 'b') {
+            base = 2;
+          }
+        }
+        for(u32 i = 0; i < value.len; i += 1) {
+          char currentChar = value.ptr[i];
+          u32 digit = 0;
+          if(in_range('0', '9', currentChar)) {
+            digit = (u32)(currentChar - '0');
+          }
+          else if(in_range('a', 'f', currentChar)) {
+            digit = (u32)(currentChar - 'a');
+          }
+          else if(in_range('A', 'F', currentChar)) {
+            digit = (u32)(currentChar - 'A');
+          }
+          else {
+            assert(0);
+          }
+          result *= base;
+          result += digit;
+        }
+        
+        target->value_i = result;
+        
+      } break;
+      
+      case(TYPE_STRING): {
+        
+        if(value.len > 2) {
+          target->string = malloc((value.len - 2) * sizeof(char));
+          target->stringLen = value.len - 2;
+          for(u32 i = 1; i < value.len - 1; i += 1) {
+            char character = value.ptr[i];
+            if(character == '\\') {
+              i += 1;
+              switch(value.ptr[i]) {
+                case('n'): { character = '\n'; } break;
+                case('t'): { character = '\t'; } break;
+                case('"'): { character = '\"'; } break;
+              }
+            }
+            target->string[i-1] = value.ptr[i];
+          }
+        }
+        else {
+          target->stringLen = 0;
+          target->string = 0;
+        }
+        
+      } break;
+      
+      case(TYPE_FLOAT): {
+        
+        float result = 0.0;
+        float pw = 1.0f;
+        
+        u32 i = 0;
+        for(;i < value.len; i += 1) {
+          char digitChar = value.ptr[i];
+          u32 digit = 0;
+          if(in_range('0', '9', digitChar)) {
+            digit = digitChar - '0';
+          }
+          else if(digitChar == '.') {
+            break;
+          }
+          else if(digitChar == 'e' || digitChar == 'E') {
+            break;
+          }
+          else assert(0);
+          result *= 10.0f;
+          result += (float)digit;
+        }
+        
+        if(value.ptr[i] = '.') {
+          i += 1;
+          for(;i < value.len; i += 1) {
+            char digitChar = value.ptr[i];
+            u32 digit = 0;
+            if(in_range('0', '9', digitChar)) {
+              digit = digitChar - '0';
+            }
+            else if(digitChar == '.') {
+              assert(0);
+            }
+            else if(digitChar == 'e' || digitChar == 'E') {
+              break;
+            }
+            else assert(0);
+            result *= 10.0f;
+            pw /= 10.0f;
+            result += (float)digit;
+          }
+        }
+        result *= pw;
+        
+        if(value.ptr[i] == 'e' || value.ptr[i] == 'E') {
+          i += 1;
+          u32 expSign = 1;
+          if(value.ptr[i] == '+') {
+            expSign = 1;
+          }
+          else if(value.ptr[i] == '-') {
+            expSign = -1;
+          }
+          else assert(0);
+          i += 1;
+          
+          u32 exp = 0;
+          for(;i < value.len; i += 1) {
+            char digitChar = value.ptr[i];
+            u32 digit = 0;
+            if(in_range('0', '9', digitChar)) {
+              digit = digitChar - '0';
+            }
+            else if(digitChar == '.') {
+              assert(0);
+            }
+            else if(digitChar == 'e' || digitChar == 'E') {
+              assert(0);
+            }
+            else assert(0);
+            exp *= 10;
+            exp += digit;
+          }
+          
+          if(sign = 1) {
+            for(u32 j = 0; j < exp; j += 1) {
+              result *= 10.0f;
+            }
+          }
+          else if(sign = -1) {
+            for(u32 j = 0; j < exp; j += 1) {
+              result /= 10.0f;
+            }
+          }
+        }
+        
+      } break;
+      
+      case(TYPE_IDENTIFIER): {
+        struct t_identifier* source = find_identifier(&list, value);
+        if(!source) goto error;
+        target->type = source->type;
+        switch(target->type) {
+          case(TYPE_INTEGER): {
+            target->value_i = source->value_i;
+          } break;
+          case(TYPE_FLOAT) {
+            target->value_f = source->value_f;
+          } break;
+          case(TYPE_STRING) {
+            // TODO(bumbread): maybe this should be copied over by reference
+            target->string = source->string;
+            target->stringLength = source->stringLength;
+          } break;
+          default: assert(0);
+        }
+        
+      } break;
+      
+    }
   }
   
-  return;
+  return(identifiers);
   error: {
-    appConfig->error = true;
+    identifiers.error = true;
+    return(identifiers);
   }
+}
+
+internal void config_load_identifiers(struct t_identifier_list list, struct t_app_config appConfig) {
+  // TODO(bumbread): 
 }
 
 internal void app_load_config(struct t_app_config* appConfig, t_string16 filename) {
@@ -399,13 +597,18 @@ internal void app_load_config(struct t_app_config* appConfig, t_string16 filenam
   
   t_file_data configData = platform_load_file(filename);
   if(configData.size) {
-    struct t_app_config tempConfig = {0};
     t_token_list configTokens = app_lex_config(&tempConfig);
     if(configTokens.error) {
       // TODO(bumbread): error handle this
     }
     else {
-      *appConfig = tempConfig;
+      struct t_identifier_list list = config_parse_identifiers(configTokens);
+      if(list.error) {
+        // TODO(bumbread): error handle
+      }
+      else {
+        config_load_identifiers(list, &appConfig);
+      }
     }
   }
   else {
