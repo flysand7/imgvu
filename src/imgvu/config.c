@@ -158,7 +158,6 @@ internal void link_create_as(t_link_list* list, t_string name, t_array_s* value)
 
 internal void config_load_settings(t_setting_list* settings, t_link_list* links) {
   for(u32 settingIndex = 0; settingIndex < settings->count; settingIndex += 1) {
-    // TODO(bumbread): make those static or smth
     t_setting* currentSetting = settings->v + settingIndex;
     for(u32 linkIndex = 0; linkIndex < links->count; linkIndex += 1) {
       t_setting_link* link = links->v + linkIndex;
