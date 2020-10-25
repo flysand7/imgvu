@@ -85,10 +85,7 @@ internal t_string16 platform_get_config_filename(void);
 
 // NOTE(bumbread): The services the app provides to the platform layer.
 
-struct {
-  bool error;
-  u32 backgroundColor;
-} typedef t_app_config;
+#include"config.c"
 
 struct {
   bool initialized;

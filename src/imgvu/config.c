@@ -1,4 +1,9 @@
 
+struct {
+  bool error;
+  u32 backgroundColor;
+} typedef t_app_config;
+
 internal void app_write_config_to_file(t_app_config* appConfig, t_string16 filename) {
   t_file_data output = {0};
   output.filename = filename;
