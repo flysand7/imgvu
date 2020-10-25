@@ -110,16 +110,17 @@ internal t_file_data platform_load_file(t_string16 fullFilename) {
     LARGE_INTEGER fileSize;
     bool result = GetFileSizeEx(fileHandle, &fileSize);
     assert(result);
-    assert(fileSize.LowPart != 0);
-    fileData.ptr = malloc((u32)fileSize.LowPart);
-    DWORD bytesRead = 0;
-    
-    result = ReadFile(fileHandle, fileData.ptr, fileSize.LowPart, &bytesRead, 0);
-    assert(result);
-    CloseHandle(fileHandle);
-    assert((DWORD)fileSize.LowPart == bytesRead);
-    
-    fileData.size = (u32)fileSize.LowPart;
+    if(fileSize.LowPart != 0) {
+      fileData.ptr = malloc((u32)fileSize.LowPart);
+      DWORD bytesRead = 0;
+      
+      result = ReadFile(fileHandle, fileData.ptr, fileSize.LowPart, &bytesRead, 0);
+      assert(result);
+      CloseHandle(fileHandle);
+      assert((DWORD)fileSize.LowPart == bytesRead);
+      
+      fileData.size = (u32)fileSize.LowPart;
+    }
   }
   
   return(fileData);
