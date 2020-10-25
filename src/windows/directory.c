@@ -111,7 +111,8 @@ internal bool win32_cache_add(t_directory_state* dirState, u32 fileIndex) {
       file->cacheLoads += 1;
     }
   }
-  else if(file->cached == false) {
+  
+  if(file->cached == false) {
     win32_directory_remove(dirState, fileIndex);
     return(true);
   }
