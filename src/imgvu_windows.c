@@ -70,11 +70,6 @@ global t_app_state g_app_state;
 
 internal void
 win32_draw_app(t_window* window, HDC deviceContext) {
-  for(u32 pixelIndex = 0; 
-      pixelIndex < window->clientWidth*window->clientHeight; 
-      pixelIndex += 1) {
-    window->pixels[pixelIndex] = 0;
-  }
   app_draw(&g_app_state);
   paint_window_gdi(window, deviceContext);
 }
