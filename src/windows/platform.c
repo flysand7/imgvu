@@ -47,6 +47,17 @@ internal t_image* platform_get_current_image(t_directory_state* dirState) {
   return(0);
 }
 
+// TODO(bumbread): should make abstract color structure that describes color in a
+// platform independent way.
+internal void platform_clear_screen(u32 color) {
+  
+  for(u32 row = 0; row < g_window.clientHeight; row += 1) {
+    for(u32 column = 0; column < g_window.clientWidth; column += 1) {
+      g_window.pixels[row*g_window.clientWidth + column] = color;
+    }
+  }
+  
+}
 
 internal void platform_draw_image(t_location* loc, t_image* image) {
   i32 maxWidth = (i32)g_window.clientWidth;

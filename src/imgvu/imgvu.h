@@ -76,6 +76,7 @@ internal void platform_directory_next_file(struct t_directory_state_s* state);
 internal void platform_directory_previous_file(struct t_directory_state_s* state);
 
 internal t_image* platform_get_current_image(struct t_directory_state_s* dirState);
+internal void platform_clear_screen(u32 color);
 internal void platform_draw_image(t_location* loc, t_image* image);
 
 internal t_file_data platform_load_file(t_string16 fullFilename);
