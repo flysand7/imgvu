@@ -28,14 +28,14 @@ internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirS
   if(input->prevImage && !input->nextImage) {
     platform_directory_previous_file(dirState);
     appState->appConfig.backgroundColor += 1;
-    if(appState->appConfig.backgroundColor >= appState->appConfig.colorCycleCount) {
+    if(appState->appConfig.backgroundColor >= appState->appConfig.colorCycle.len) {
       appState->appConfig.backgroundColor = 0;
     }
   }
   if(input->nextImage && !input->prevImage) {
     platform_directory_next_file(dirState);
     appState->appConfig.backgroundColor += 1;
-    if(appState->appConfig.backgroundColor >= appState->appConfig.colorCycleCount) {
+    if(appState->appConfig.backgroundColor >= appState->appConfig.colorCycle.len) {
       appState->appConfig.backgroundColor = 0;
     }
   }
@@ -45,8 +45,8 @@ internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirS
 
 internal void app_draw(t_app_state* appState) {
   
-  if(appState->appConfig.colors)
-    platform_clear_screen(appState->appConfig.colors[appState->appConfig.backgroundColor]);
+  if(appState->appConfig.colorCycle.ptr)
+    platform_clear_screen(appState->appConfig.colorCycle.ptr[appState->appConfig.backgroundColor]);
   
   if(appState->dirState != 0) {
     t_image* currentImage = platform_get_current_image(appState->dirState);

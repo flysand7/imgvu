@@ -103,7 +103,7 @@ internal t_string char_count(char* string) {
   return(result);
 }
 
-#if 0
+
 internal t_string string_copy_mem(t_string string) {
   t_string result;
   result.len = string.len;
@@ -113,6 +113,7 @@ internal t_string string_copy_mem(t_string string) {
   return(result);
 }
 
+#if 0
 internal t_string string_concatenate_mem(t_string first, t_string second) {
   t_string result;
   result.len = first.len + second.len;
