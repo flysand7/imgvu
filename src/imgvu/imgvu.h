@@ -79,20 +79,20 @@ internal t_image* platform_get_current_image(struct t_directory_state_s* dirStat
 internal void platform_draw_image(t_location* loc, t_image* image);
 
 internal t_file_data platform_load_file(t_string16 fullFilename);
-internal bool  platform_write_file(t_file_data file);
+internal bool platform_write_file(t_file_data file);
 internal t_string16 platform_get_config_filename(void);
 
 // NOTE(bumbread): The services the app provides to the platform layer.
 
-struct t_app_config {
+struct {
   bool error;
   u32 backgroundColor;
-};
+} typedef t_app_config;
 
 struct {
   bool initialized;
   struct t_directory_state_s* dirState;
-  struct t_app_config appConfig;
+  t_app_config appConfig;
   t_location imageLocation;
 } typedef t_app_state;
 
