@@ -286,6 +286,41 @@ internal t_setting* setting_from_token(t_setting_list* settings, t_token* identi
   return(target);
 }
 
+internal void setting_copy(t_setting* dest, t_setting* source) {
+  dest->type = source->type;
+  if(dest->type == TYPE_INTEGER) {
+    dest->value_i = source->value_i;
+  }
+  else if(dest->type == TYPE_FLOAT) {
+    dest->value_f = source->value_f;
+  }
+  else if(dest->type == TYPE_STRING) {
+    dest->value_s = string_copy_mem(source->value_s);
+  }
+  else if(dest->type == TYPE_ARRAY_INTEGER) {
+    dest->value_ai.len = source->value_ai.len;
+    dest->value_ai.ptr = malloc(dest->value_ai.len * sizeof(u32));
+    for(u32 index = 0; index < dest->value_ai.len; index += 1) {
+      dest->value_ai.ptr[index] = source->value_ai.ptr[index];
+    }
+  }
+  else if(dest->type == TYPE_ARRAY_FLOAT) {
+    dest->value_af.len = source->value_af.len;
+    dest->value_af.ptr = malloc(dest->value_af.len * sizeof(r32));
+    for(u32 index = 0; index < dest->value_af.len; index += 1) {
+      dest->value_af.ptr[index] = source->value_af.ptr[index];
+    }
+  }
+  else if(dest->type == TYPE_ARRAY_STRING) {
+    dest->value_as.len = source->value_as.len;
+    dest->value_as.ptr = malloc(dest->value_as.len * sizeof(t_string));
+    for(u32 index = 0; index < dest->value_as.len; index += 1) {
+      dest->value_as.ptr[index] = string_copy_mem(source->value_as.ptr[index]);
+    }
+  }
+  else assert(0);
+}
+
 internal u32 token_parse_integer(t_token* token) {
   debug_variable_unused(token);
   return(0);
@@ -301,6 +336,34 @@ internal u32 token_parse_float(t_token* token) {
 internal t_string token_parse_string(t_token* token) {
   debug_variable_unused(token);
   return((t_string) {0});
+}
+
+internal bool write_token_to_setting(t_setting_list* settings, t_setting* target, t_token* value) {
+  if(value->type == TOKEN_TYPE_INTEGER) {
+    target->type = TYPE_INTEGER;
+    target->value_i = token_parse_integer(value);
+  }
+  else if(value->type == TOKEN_TYPE_FLOAT) {
+    target->type = TYPE_FLOAT;
+    target->value_f = token_parse_float(value);
+  }
+  else if(value->type == TOKEN_TYPE_STRING) {
+    target->type = TYPE_STRING;
+    target->value_s = token_parse_string(value);
+  }
+  else if(value->type == TOKEN_TYPE_IDENTIFIER) {
+    t_setting* source = setting_from_token(settings, value);
+    if(source == 0) return(false); // TODO(bumbread): do we want this to be less strict?
+    setting_copy(target, source);
+  }
+  else assert(0);
+  return(true);
+}
+
+internal bool write_token_array_to_setting(t_setting_list* settings, t_setting* target, 
+                                           t_token* arrayFirst, u32 arrayCount) {
+  
+  return(true);
 }
 
 internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) {
@@ -323,6 +386,28 @@ internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) 
     if(name->type != TOKEN_TYPE_IDENTIFIER) goto error;
     t_setting* target = setting_from_token(settings, name);
     
+    bool assigned = false;
+    if(value.type >= TOKEN_TYPE_IDENTIFIER && value.type <= TOKEN_TYPE_FLOAT) {
+      assigned = write_token_to_setting(settings, target, value);
+    }
+    else if(value.type == TOKEN_TYPE_ARRAY_OPEN) {
+      if(tokenIndex >= tokens.count) goto error;
+      t_token* arrayFirst = tokens.v + tokenIndex;
+      t_token* arrayValue = arrayFirst;
+      tokenIndex += 1;
+      
+      u32 arrayCount = 0;
+      loop {
+        if(arrayValue->type == TOKEN_TYPE_ARRAY_CLOSE) break;
+        if(tokenIndex >= tokens.count) goto error;
+        t_token* arrayValue = tokens.v + tokenIndex;
+        tokenIndex += 1;
+        arrayCount += 1;
+      }
+      assigned = write_token_array_to_setting(settings, target, arrayFirst, arrayCount);
+    }
+    
+    if(!assigned) goto error;
   }
   
   return(true);
