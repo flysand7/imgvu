@@ -19,6 +19,7 @@ REM =================
 REM COMPILATION SETUP
 REM =================
 
+set warnings=-Wno-unused-function
 if %use_asan% == 1 (set mode=%mode% %use_asan_f%)
 
 set cmp_flags=%mode% %defines% -nologo -FC -Wall -WX -TC -Ob1 -Oi -EHa -Zp4 %warnings%

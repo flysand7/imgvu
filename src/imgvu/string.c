@@ -75,7 +75,6 @@ internal bool string16_compare(t_string16 string1, t_string16 string2) {
 }
 
 // string functions
-
 internal t_string char_copy(char* chars) {
   t_string result = {0};
   for(u32 i = 0; chars[i] != 0; i += 1) result.len += 1;
@@ -83,7 +82,6 @@ internal t_string char_copy(char* chars) {
   return(result);
 }
 
-#if 0
 internal t_string char_copy_mem(char* string) {
   assert(string != 0);
   t_string result = {0};
@@ -93,7 +91,6 @@ internal t_string char_copy_mem(char* string) {
   result.ptr[result.len] = 0;
   return(result);
 }
-#endif
 
 internal t_string char_count(char* string) {
   t_string result;

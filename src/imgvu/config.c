@@ -104,7 +104,6 @@ internal void link_add(t_link_list* list, t_setting_link link) {
   list->count += 1;
 }
 
-#if 0
 internal void link_create_i(t_link_list* list, t_string name, i32* value) {
   t_setting_link result = {0};
   result.type = TYPE_INTEGER;
@@ -128,7 +127,6 @@ internal void link_create_s(t_link_list* list, t_string name, t_string* value) {
   result.value_s = value;
   link_add(list, result);
 }
-#endif
 
 internal void link_create_ai(t_link_list* list, t_string name, t_array_i* value) {
   t_setting_link result = {0};
@@ -138,7 +136,6 @@ internal void link_create_ai(t_link_list* list, t_string name, t_array_i* value)
   link_add(list, result);
 }
 
-#if 0
 internal void link_create_af(t_link_list* list, t_string name, t_array_f* value) {
   t_setting_link result = {0};
   result.type = TYPE_ARRAY_FLOAT;
@@ -154,7 +151,6 @@ internal void link_create_as(t_link_list* list, t_string name, t_array_s* value)
   result.value_as = value;
   link_add(list, result);
 }
-#endif
 
 internal void config_load_settings(t_setting_list* settings, t_link_list* links) {
   for(u32 settingIndex = 0; settingIndex < settings->count; settingIndex += 1) {
