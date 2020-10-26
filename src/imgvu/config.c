@@ -84,6 +84,7 @@ enum {
   
   TOKEN_TYPE_ARRAY_OPEN,
   TOKEN_TYPE_ARRAY_CLOSE,
+  TOKEN_TYPE_ASSIGMENT,
   
   TOKEN_TYPE_EOF,
   
@@ -151,6 +152,7 @@ internal bool parse_config_file(t_setting_list* list, t_file_data fileData) {
     else if(c=='{')           {advance_to(state_array_start)}
     else if(c=='}')           {advance_to(state_array_end)}
     else if(c=='"')           {advance_to(state_string)}
+    else if(c=='=')           {advance_to(state_assigment)}
     else if(is_dec_digit(c))  {advance_to(state_dec_integer)}
     else if(is_whitespace(c)) {advance_to(state_main)}
     else if(c==0)             goto end;
@@ -162,6 +164,7 @@ internal bool parse_config_file(t_setting_list* list, t_file_data fileData) {
     if(is_alphanumeric(c))    {advance_to(state_identifier)}
     else if(is_whitespace(c)) {token_finish(state_main)}
     else if(c=='}')           {token_finish(state_main)}
+    else if(c=='=')           {token_finish(state_main)}
     else if(c==0)             {token_finish(state_main)}
     else                      goto error;
   }
@@ -172,6 +175,7 @@ internal bool parse_config_file(t_setting_list* list, t_file_data fileData) {
     else if(c=='x')           {advance_to(state_hex_integer)}
     else if(c=='b')           {advance_to(state_bin_integer)}
     else if(c=='.')           {advance_to(state_float)}
+    else if(c=='=')           {token_finish(state_main)}
     else if(c=='}')           {token_finish(state_main)}
     else if(is_whitespace(c)) {token_finish(state_main)}
     else if(c==0)             goto error;
@@ -183,6 +187,7 @@ internal bool parse_config_file(t_setting_list* list, t_file_data fileData) {
     if(is_dec_digit(c))       {advance_to(state_dec_integer)}
     else if(c=='.')           {advance_to(state_float)}
     else if(c=='}')           {token_finish(state_main)}
+    else if(c=='=')           {token_finish(state_main)}
     else if(c==0)             {token_finish(state_main)}
     else if(is_whitespace(c)) {token_finish(state_main)}
     else                      goto error;
@@ -192,6 +197,7 @@ internal bool parse_config_file(t_setting_list* list, t_file_data fileData) {
     state_start(TOKEN_TYPE_INTEGER);
     if(is_hex_digit(c))       {advance_to(state_hex_integer)}
     else if(c=='}')           {token_finish(state_main)}
+    else if(c=='=')           {token_finish(state_main)}
     else if(c==0)             {token_finish(state_main)}
     else if(is_whitespace(c)) {token_finish(state_main)}
     else                      goto error;
@@ -201,6 +207,7 @@ internal bool parse_config_file(t_setting_list* list, t_file_data fileData) {
     state_start(TOKEN_TYPE_INTEGER);
     if(is_bin_digit(c))       {advance_to(state_bin_integer)}
     else if(c=='}')           {token_finish(state_main)}
+    else if(c=='=')           {token_finish(state_main)}
     else if(c==0)             {token_finish(state_main)}
     else if(is_whitespace(c)) {token_finish(state_main)}
     else                      goto error;
@@ -210,6 +217,7 @@ internal bool parse_config_file(t_setting_list* list, t_file_data fileData) {
     state_start(TOKEN_TYPE_FLOAT);
     if(is_dec_digit(c))       {advance_to(state_float)}
     else if(c=='}')           {token_finish(state_main)}
+    else if(c=='=')           {token_finish(state_main)}
     else if(c==0)             {token_finish(state_main)}
     else if(is_whitespace(c)) {token_finish(state_main)}
     else                      goto error;
@@ -218,14 +226,18 @@ internal bool parse_config_file(t_setting_list* list, t_file_data fileData) {
   state_array_start: {
     state_start(TOKEN_TYPE_ARRAY_OPEN);
     {token_finish(state_main)}
-    
     debug_variable_unused(c);
   }
   
   state_array_end: {
     state_start(TOKEN_TYPE_ARRAY_CLOSE);
     {token_finish(state_main)}
-    
+    debug_variable_unused(c);
+  }
+  
+  state_assigment: {
+    state_start(TOKEN_TYPE_ASSIGMENT);
+    {token_finish(state_main)}
     debug_variable_unused(c);
   }
   
