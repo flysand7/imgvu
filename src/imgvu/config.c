@@ -244,12 +244,13 @@ internal bool parse_config_file(t_setting_list* list, t_file_data fileData) {
   state_string: {
     state_start(TOKEN_TYPE_STRING);
     if(c=='\\')               {advance_to(state_string_screen)}
-    else if(c=='"')           {token_finish(state_main)}
+    else if(c=='"')           {advance_to(state_string_end)}
     else if(c==0)             goto error;
     else                      {advance_to(state_string)}
   }
   
   state_string_screen: {advance_to(state_string)}
+  state_string_end:    {token_finish(state_main)}
   
   end:
   debug_variable_unused(list);
