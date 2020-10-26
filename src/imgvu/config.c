@@ -159,17 +159,16 @@ internal t_string token_parse_string(t_token* token) {
   return((t_string) {0});
 }
 
+#define advance_to(state)   {index+=1;token.len+=1; goto state;}
+#define token_start()       token.start = text + index;token.len = 0
+#define token_finish(state) {token_push(&tokens, token); goto state;}
+#define state_start(t)      token.type = (t); char c = text[index]
 internal t_token_list lex_config_file(t_file_data fileData) {
   t_token_list tokens = {0};
   {
     t_token token = {0};
     char* text = (char*)fileData.ptr;
     u32 index = 0;
-#define advance_to(state)   {index+=1;token.len+=1; goto state;}
-    //#define jump_to(state) {goto state;}
-#define token_start()       token.start = text + index;token.len = 0
-#define token_finish(state) {token_push(&tokens, token); goto state;}
-#define state_start(t)      token.type = (t); char c = text[index]
     
     state_main: {
       state_start(0);
@@ -282,10 +281,12 @@ internal t_token_list lex_config_file(t_file_data fileData) {
   }
   
   end:
-  return(true);
+  return(tokens);
   error: {
     if(tokens.v) free(tokens.v);
-    return(false);
+    tokens.count = 0;
+    tokens.alloc = 0;
+    return(tokens);
   }
 }
 
@@ -320,6 +321,10 @@ internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) 
     
     debug_variable_unused(value);
   }
+  
+  return(true);
+  error:
+  return(false);
 }
 
 struct {
