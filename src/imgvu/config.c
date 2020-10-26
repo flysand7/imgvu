@@ -159,10 +159,8 @@ internal t_string token_parse_string(t_token* token) {
   return((t_string) {0});
 }
 
-internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) {
+internal t_token_list lex_config_file(t_file_data fileData) {
   t_token_list tokens = {0};
-  
-  // NOTE(bumbread): lexing the input string
   {
     t_token token = {0};
     char* text = (char*)fileData.ptr;
@@ -284,9 +282,15 @@ internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) 
   }
   
   end:
-  
-  static_make_string(str_true, "true");
-  static_make_string(str_false, "false");
+  return(true);
+  error: {
+    if(tokens.v) free(tokens.v);
+    return(false);
+  }
+}
+
+internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) {
+  t_token_list tokens = lex_config_file(fileData);
   
   u32 tokenIndex = 0;
   loop {
@@ -315,11 +319,6 @@ internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) 
     }
     
     debug_variable_unused(value);
-  }
-  
-  return(true);
-  error: {
-    return(false);
   }
 }
 
