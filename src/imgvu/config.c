@@ -142,23 +142,6 @@ internal inline int get_hex_digit(char c) {
   return(-1);
 }
 
-internal u32 token_parse_integer(t_token* token) {
-  debug_variable_unused(token);
-  return(0);
-}
-
-
-internal u32 token_parse_float(t_token* token) {
-  debug_variable_unused(token);
-  return(0);
-}
-
-
-internal t_string token_parse_string(t_token* token) {
-  debug_variable_unused(token);
-  return((t_string) {0});
-}
-
 #define advance_to(state)   {index+=1;token.len+=1; goto state;}
 #define token_start()       token.start = text + index;token.len = 0
 #define token_finish(state) {token_push(&tokens, token); goto state;}
@@ -303,6 +286,23 @@ internal t_setting* setting_from_token(t_setting_list* settings, t_token* identi
   return(target);
 }
 
+internal u32 token_parse_integer(t_token* token) {
+  debug_variable_unused(token);
+  return(0);
+}
+
+
+internal u32 token_parse_float(t_token* token) {
+  debug_variable_unused(token);
+  return(0);
+}
+
+
+internal t_string token_parse_string(t_token* token) {
+  debug_variable_unused(token);
+  return((t_string) {0});
+}
+
 internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) {
   t_token_list tokens = lex_config_file(fileData);
   u32 tokenIndex = 0;
@@ -322,6 +322,7 @@ internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) 
     if(op->type != TOKEN_TYPE_ASSIGMENT) goto error;
     if(name->type != TOKEN_TYPE_IDENTIFIER) goto error;
     t_setting* target = setting_from_token(settings, name);
+    
   }
   
   return(true);
