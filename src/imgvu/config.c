@@ -290,9 +290,21 @@ internal t_token_list lex_config_file(t_file_data fileData) {
   }
 }
 
+internal t_setting* setting_from_token(t_setting_list* settings, t_token* identifier) {
+  t_string identifierName;
+  identifierName.ptr = identifier->start;
+  identifierName.len = identifier->len;
+  t_setting* target = settings_find(settings, identifierName);
+  if(!target) {
+    t_setting newSetting = {0};
+    newSetting.name = identifierName;
+    target = settings_add(settings, newSetting);
+  }
+  return(target);
+}
+
 internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) {
   t_token_list tokens = lex_config_file(fileData);
-  
   u32 tokenIndex = 0;
   loop {
     if(tokenIndex >= tokens.count) break;
@@ -309,17 +321,7 @@ internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) 
     
     if(op->type != TOKEN_TYPE_ASSIGMENT) goto error;
     if(name->type != TOKEN_TYPE_IDENTIFIER) goto error;
-    t_string identifierName;
-    identifierName.ptr = name->start;
-    identifierName.len = name->len;
-    t_setting* target = settings_find(settings, identifierName);
-    if(!target) {
-      t_setting newSetting = {0};
-      newSetting.name = identifierName;
-      target = settings_add(settings, newSetting);
-    }
-    
-    debug_variable_unused(value);
+    t_setting* target = setting_from_token(settings, name);
   }
   
   return(true);
