@@ -50,8 +50,8 @@ struct {
   t_string name;
   t_setting_type type;
   union {
-    i32 value_i;
-    r32 value_f;
+    i64 value_i;
+    r64 value_f;
     t_string value_s;
     t_array_i value_ai;
     t_array_f value_af;
@@ -65,17 +65,30 @@ struct {
   u32 alloc;
 } typedef t_setting_list;
 
-internal void settings_add(t_setting_list* list, t_setting setting) {
+internal t_setting* settings_add(t_setting_list* list, t_setting setting) {
   if(list->count + 1 > list->alloc) {
     list->alloc *= 2;
     if(list->alloc == 0) list->alloc = 1;
     list->v = realloc(list->v, list->alloc * sizeof(t_setting));
   }
-  list->v[list->count] = setting;
+  t_setting* result = list->v + list->count;
+  *result = setting;
   list->count += 1;
+  return(result);
+}
+
+internal t_setting* settings_find(t_setting_list* settings, t_string name) {
+  for(u32 settingIndex = 0; settingIndex < settings->count; settingIndex += 1) {
+    t_setting* setting = settings->v + settingIndex;
+    if(string_compare(setting->name, name)) {
+      return(setting);
+    }
+  }
+  return(0);
 }
 
 enum {
+  TOKEN_TYPE_UNDEFINED,
   
   TOKEN_TYPE_IDENTIFIER,
   TOKEN_TYPE_INTEGER,
@@ -129,131 +142,180 @@ internal inline int get_hex_digit(char c) {
   return(-1);
 }
 
-internal bool parse_config_file(t_setting_list* list, t_file_data fileData) {
-  
-  char* text = (char*)fileData.ptr;
-  u32 index = 0;
-  
+internal u32 token_parse_integer(t_token* token) {
+  debug_variable_unused(token);
+  return(0);
+}
+
+
+internal u32 token_parse_float(t_token* token) {
+  debug_variable_unused(token);
+  return(0);
+}
+
+
+internal t_string token_parse_string(t_token* token) {
+  debug_variable_unused(token);
+  return((t_string) {0});
+}
+
+internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) {
   t_token_list tokens = {0};
-  t_token token = {0};
   
+  // NOTE(bumbread): lexing the input string
+  {
+    t_token token = {0};
+    char* text = (char*)fileData.ptr;
+    u32 index = 0;
 #define advance_to(state)   {index+=1;token.len+=1; goto state;}
-  //#define jump_to(state) {goto state;}
+    //#define jump_to(state) {goto state;}
 #define token_start()       token.start = text + index;token.len = 0
 #define token_finish(state) {token_push(&tokens, token); goto state;}
 #define state_start(t)      token.type = (t); char c = text[index]
-  
-  state_main: {
-    state_start(0);
-    token_start();
-    if(is_letter(c))          {advance_to(state_identifier)}
-    else if(c=='0')           {advance_to(state_integer_prefix)}
-    else if(c=='.')           {advance_to(state_float)}
-    else if(c=='{')           {advance_to(state_array_start)}
-    else if(c=='}')           {advance_to(state_array_end)}
-    else if(c=='"')           {advance_to(state_string)}
-    else if(c=='=')           {advance_to(state_assigment)}
-    else if(is_dec_digit(c))  {advance_to(state_dec_integer)}
-    else if(is_whitespace(c)) {advance_to(state_main)}
-    else if(c==0)             goto end;
-    else                      goto error;
+    
+    state_main: {
+      state_start(0);
+      token_start();
+      if(is_letter(c))          {advance_to(state_identifier)}
+      else if(c=='0')           {advance_to(state_integer_prefix)}
+      else if(c=='.')           {advance_to(state_float)}
+      else if(c=='{')           {advance_to(state_array_start)}
+      else if(c=='}')           {advance_to(state_array_end)}
+      else if(c=='"')           {advance_to(state_string)}
+      else if(c=='=')           {advance_to(state_assigment)}
+      else if(is_dec_digit(c))  {advance_to(state_dec_integer)}
+      else if(is_whitespace(c)) {advance_to(state_main)}
+      else if(c==0)             goto end;
+      else                      goto error;
+    }
+    
+    state_identifier: {
+      state_start(TOKEN_TYPE_IDENTIFIER);
+      if(is_alphanumeric(c))    {advance_to(state_identifier)}
+      else if(is_whitespace(c)) {token_finish(state_main)}
+      else if(c=='}')           {token_finish(state_main)}
+      else if(c=='=')           {token_finish(state_main)}
+      else if(c==0)             {token_finish(state_main)}
+      else                      goto error;
+    }
+    
+    state_integer_prefix: {
+      state_start(TOKEN_TYPE_INTEGER);
+      if(is_dec_digit(c))       {advance_to(state_dec_integer)}
+      else if(c=='x')           {advance_to(state_hex_integer)}
+      else if(c=='b')           {advance_to(state_bin_integer)}
+      else if(c=='.')           {advance_to(state_float)}
+      else if(c=='=')           {token_finish(state_main)}
+      else if(c=='}')           {token_finish(state_main)}
+      else if(is_whitespace(c)) {token_finish(state_main)}
+      else if(c==0)             goto error;
+      else                      goto error;
+    }
+    
+    state_dec_integer: {
+      state_start(TOKEN_TYPE_INTEGER);
+      if(is_dec_digit(c))       {advance_to(state_dec_integer)}
+      else if(c=='.')           {advance_to(state_float)}
+      else if(c=='}')           {token_finish(state_main)}
+      else if(c=='=')           {token_finish(state_main)}
+      else if(c==0)             {token_finish(state_main)}
+      else if(is_whitespace(c)) {token_finish(state_main)}
+      else                      goto error;
+    }
+    
+    state_hex_integer: {
+      state_start(TOKEN_TYPE_INTEGER);
+      if(is_hex_digit(c))       {advance_to(state_hex_integer)}
+      else if(c=='}')           {token_finish(state_main)}
+      else if(c=='=')           {token_finish(state_main)}
+      else if(c==0)             {token_finish(state_main)}
+      else if(is_whitespace(c)) {token_finish(state_main)}
+      else                      goto error;
+    }
+    
+    state_bin_integer: {
+      state_start(TOKEN_TYPE_INTEGER);
+      if(is_bin_digit(c))       {advance_to(state_bin_integer)}
+      else if(c=='}')           {token_finish(state_main)}
+      else if(c=='=')           {token_finish(state_main)}
+      else if(c==0)             {token_finish(state_main)}
+      else if(is_whitespace(c)) {token_finish(state_main)}
+      else                      goto error;
+    }
+    
+    state_float: {
+      state_start(TOKEN_TYPE_FLOAT);
+      if(is_dec_digit(c))       {advance_to(state_float)}
+      else if(c=='}')           {token_finish(state_main)}
+      else if(c=='=')           {token_finish(state_main)}
+      else if(c==0)             {token_finish(state_main)}
+      else if(is_whitespace(c)) {token_finish(state_main)}
+      else                      goto error;
+    }
+    
+    state_array_start: {
+      state_start(TOKEN_TYPE_ARRAY_OPEN);
+      {token_finish(state_main)}
+      debug_variable_unused(c);
+    }
+    
+    state_array_end: {
+      state_start(TOKEN_TYPE_ARRAY_CLOSE);
+      {token_finish(state_main)}
+      debug_variable_unused(c);
+    }
+    
+    state_assigment: {
+      state_start(TOKEN_TYPE_ASSIGMENT);
+      {token_finish(state_main)}
+      debug_variable_unused(c);
+    }
+    
+    state_string: {
+      state_start(TOKEN_TYPE_STRING);
+      if(c=='\\')               {advance_to(state_string_screen)}
+      else if(c=='"')           {advance_to(state_string_end)}
+      else if(c==0)             goto error;
+      else                      {advance_to(state_string)}
+    }
+    
+    state_string_screen: {advance_to(state_string)}
+    state_string_end:    {token_finish(state_main)}
   }
-  
-  state_identifier: {
-    state_start(TOKEN_TYPE_IDENTIFIER);
-    if(is_alphanumeric(c))    {advance_to(state_identifier)}
-    else if(is_whitespace(c)) {token_finish(state_main)}
-    else if(c=='}')           {token_finish(state_main)}
-    else if(c=='=')           {token_finish(state_main)}
-    else if(c==0)             {token_finish(state_main)}
-    else                      goto error;
-  }
-  
-  state_integer_prefix: {
-    state_start(TOKEN_TYPE_INTEGER);
-    if(is_dec_digit(c))       {advance_to(state_dec_integer)}
-    else if(c=='x')           {advance_to(state_hex_integer)}
-    else if(c=='b')           {advance_to(state_bin_integer)}
-    else if(c=='.')           {advance_to(state_float)}
-    else if(c=='=')           {token_finish(state_main)}
-    else if(c=='}')           {token_finish(state_main)}
-    else if(is_whitespace(c)) {token_finish(state_main)}
-    else if(c==0)             goto error;
-    else                      goto error;
-  }
-  
-  state_dec_integer: {
-    state_start(TOKEN_TYPE_INTEGER);
-    if(is_dec_digit(c))       {advance_to(state_dec_integer)}
-    else if(c=='.')           {advance_to(state_float)}
-    else if(c=='}')           {token_finish(state_main)}
-    else if(c=='=')           {token_finish(state_main)}
-    else if(c==0)             {token_finish(state_main)}
-    else if(is_whitespace(c)) {token_finish(state_main)}
-    else                      goto error;
-  }
-  
-  state_hex_integer: {
-    state_start(TOKEN_TYPE_INTEGER);
-    if(is_hex_digit(c))       {advance_to(state_hex_integer)}
-    else if(c=='}')           {token_finish(state_main)}
-    else if(c=='=')           {token_finish(state_main)}
-    else if(c==0)             {token_finish(state_main)}
-    else if(is_whitespace(c)) {token_finish(state_main)}
-    else                      goto error;
-  }
-  
-  state_bin_integer: {
-    state_start(TOKEN_TYPE_INTEGER);
-    if(is_bin_digit(c))       {advance_to(state_bin_integer)}
-    else if(c=='}')           {token_finish(state_main)}
-    else if(c=='=')           {token_finish(state_main)}
-    else if(c==0)             {token_finish(state_main)}
-    else if(is_whitespace(c)) {token_finish(state_main)}
-    else                      goto error;
-  }
-  
-  state_float: {
-    state_start(TOKEN_TYPE_FLOAT);
-    if(is_dec_digit(c))       {advance_to(state_float)}
-    else if(c=='}')           {token_finish(state_main)}
-    else if(c=='=')           {token_finish(state_main)}
-    else if(c==0)             {token_finish(state_main)}
-    else if(is_whitespace(c)) {token_finish(state_main)}
-    else                      goto error;
-  }
-  
-  state_array_start: {
-    state_start(TOKEN_TYPE_ARRAY_OPEN);
-    {token_finish(state_main)}
-    debug_variable_unused(c);
-  }
-  
-  state_array_end: {
-    state_start(TOKEN_TYPE_ARRAY_CLOSE);
-    {token_finish(state_main)}
-    debug_variable_unused(c);
-  }
-  
-  state_assigment: {
-    state_start(TOKEN_TYPE_ASSIGMENT);
-    {token_finish(state_main)}
-    debug_variable_unused(c);
-  }
-  
-  state_string: {
-    state_start(TOKEN_TYPE_STRING);
-    if(c=='\\')               {advance_to(state_string_screen)}
-    else if(c=='"')           {advance_to(state_string_end)}
-    else if(c==0)             goto error;
-    else                      {advance_to(state_string)}
-  }
-  
-  state_string_screen: {advance_to(state_string)}
-  state_string_end:    {token_finish(state_main)}
   
   end:
-  debug_variable_unused(list);
+  
+  static_make_string(str_true, "true");
+  static_make_string(str_false, "false");
+  
+  u32 tokenIndex = 0;
+  loop {
+    if(tokenIndex >= tokens.count) break;
+    t_token* name = tokens.v + tokenIndex;
+    tokenIndex += 1;
+    
+    if(tokenIndex >= tokens.count) goto error;
+    t_token* op = tokens.v + tokenIndex;
+    tokenIndex += 1;
+    
+    if(tokenIndex >= tokens.count) goto error;
+    t_token* value = tokens.v + tokenIndex;
+    tokenIndex += 1;
+    
+    if(op->type != TOKEN_TYPE_ASSIGMENT) goto error;
+    if(name->type != TOKEN_TYPE_IDENTIFIER) goto error;
+    t_string identifierName;
+    identifierName.ptr = name->start;
+    identifierName.len = name->len;
+    t_setting* target = settings_find(settings, identifierName);
+    if(!target) {
+      t_setting newSetting = {0};
+      newSetting.name = identifierName;
+      target = settings_add(settings, newSetting);
+    }
+    
+    debug_variable_unused(value);
+  }
   
   return(true);
   error: {
@@ -265,8 +327,8 @@ struct {
   t_setting_type type;
   t_string name;
   union {
-    i32* value_i;
-    r32* value_f;
+    i64* value_i;
+    r64* value_f;
     t_string* value_s;
     t_array_i* value_ai;
     t_array_f* value_af;
@@ -290,7 +352,7 @@ internal void link_add(t_link_list* list, t_setting_link link) {
   list->count += 1;
 }
 
-internal void link_create_i(t_link_list* list, t_string name, i32* value) {
+internal void link_create_i(t_link_list* list, t_string name, i64* value) {
   t_setting_link result = {0};
   result.type = TYPE_INTEGER;
   result.name = name;
@@ -298,7 +360,7 @@ internal void link_create_i(t_link_list* list, t_string name, i32* value) {
   link_add(list, result);
 }
 
-internal void link_create_f(t_link_list* list, t_string name, r32* value) {
+internal void link_create_f(t_link_list* list, t_string name, r64* value) {
   t_setting_link result = {0};
   result.type = TYPE_FLOAT;
   result.name = name;
@@ -345,7 +407,8 @@ internal void config_load_settings(t_setting_list* settings, t_link_list* links)
       t_setting_link* link = links->v + linkIndex;
       
       if(string_compare(link->name, currentSetting->name)) {
-        if(link->type == currentSetting->type) {
+        if(link->type == currentSetting->type 
+           || (currentSetting->type == TYPE_INTEGER && currentSetting->value_ai.len == 0)) {
           switch(link->type) {
             case(TYPE_INTEGER): {
               *link->value_i = currentSetting->value_i;
