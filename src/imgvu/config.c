@@ -75,6 +75,179 @@ internal void settings_add(t_setting_list* list, t_setting setting) {
   list->count += 1;
 }
 
+enum {
+  
+  TOKEN_TYPE_IDENTIFIER,
+  TOKEN_TYPE_INTEGER,
+  TOKEN_TYPE_FLOAT,
+  TOKEN_TYPE_STRING,
+  
+  TOKEN_TYPE_ARRAY_OPEN,
+  TOKEN_TYPE_ARRAY_CLOSE,
+  
+  TOKEN_TYPE_EOF,
+  
+} typedef t_token_type;
+
+struct {
+  t_token_type type;
+  char* start;
+  u32 len;
+} typedef t_token;
+
+struct {
+  t_token* v;
+  u32 count;
+  u32 alloc;
+} typedef t_token_list;
+
+internal void token_push(t_token_list* list, t_token token) {
+  if(list->count + 1 > list->alloc) {
+    list->alloc *= 2;
+    if(list->alloc == 0) list->alloc = 1;
+    list->v = realloc(list->v, list->alloc * sizeof(t_token));
+  }
+  list->v[list->count] = token;
+  list->count += 1;
+}
+
+internal inline bool in_range(char c, char s, char e) {return(c>=s && c<=e);}
+
+internal inline bool is_letter(char c) { return(in_range(c,'a','z') || in_range(c, 'A', 'Z') || (c=='_'));}
+internal inline bool is_dec_digit(char c) { return(in_range(c, '0', '9')); }
+internal inline bool is_hex_digit(char c) { return(in_range(c, '0', '9') || in_range(c, 'a', 'f') || in_range(c,'A','F')); }
+internal inline bool is_bin_digit(char c) { return(in_range(c, '0', '9') || in_range(c, 'a', 'f') || in_range(c,'A','F')); }
+internal inline bool is_whitespace(char c) { return(c==' ' || c==',' || c==';' || in_range(c, 1, 31)); }
+internal inline bool is_alphanumeric(char c) { return(is_letter(c) || is_dec_digit(c)); }
+
+internal inline int get_dec_digit(char c) { return((int)(c - '0')); }
+internal inline int get_hex_digit(char c) { 
+  if(in_range(c, 'a', 'f')) return(10 + (int)(c - 'a'));
+  if(in_range(c, 'A', 'F')) return(10 + (int)(c - 'A'));
+  if(in_range(c, '0', '9')) return((int)(c - '0'));
+  return(-1);
+}
+
+internal bool parse_config_file(t_setting_list* list, t_file_data fileData) {
+  
+  char* text = (char*)fileData.ptr;
+  u32 index = 0;
+  
+  t_token_list tokens = {0};
+  t_token token = {0};
+  
+#define advance_to(state)   {index+=1;token.len+=1; goto state;}
+  //#define jump_to(state) {goto state;}
+#define token_start()       token.start = text + index;token.len = 0
+#define token_finish(state) {token_push(&tokens, token); goto state;}
+#define state_start(t)      token.type = (t); char c = text[index]
+  
+  state_main: {
+    state_start(0);
+    token_start();
+    if(is_letter(c))          {advance_to(state_identifier)}
+    else if(c=='0')           {advance_to(state_integer_prefix)}
+    else if(c=='.')           {advance_to(state_float)}
+    else if(c=='{')           {advance_to(state_array_start)}
+    else if(c=='}')           {advance_to(state_array_end)}
+    else if(c=='"')           {advance_to(state_string)}
+    else if(is_dec_digit(c))  {advance_to(state_dec_integer)}
+    else if(is_whitespace(c)) {advance_to(state_main)}
+    else if(c==0)             goto end;
+    else                      goto error;
+  }
+  
+  state_identifier: {
+    state_start(TOKEN_TYPE_IDENTIFIER);
+    if(is_alphanumeric(c))    {advance_to(state_identifier)}
+    else if(is_whitespace(c)) {token_finish(state_main)}
+    else if(c=='}')           {token_finish(state_main)}
+    else if(c==0)             {token_finish(state_main)}
+    else                      goto error;
+  }
+  
+  state_integer_prefix: {
+    state_start(TOKEN_TYPE_INTEGER);
+    if(is_dec_digit(c))       {advance_to(state_dec_integer)}
+    else if(c=='x')           {advance_to(state_hex_integer)}
+    else if(c=='b')           {advance_to(state_bin_integer)}
+    else if(c=='.')           {advance_to(state_float)}
+    else if(c=='}')           {token_finish(state_main)}
+    else if(is_whitespace(c)) {token_finish(state_main)}
+    else if(c==0)             goto error;
+    else                      goto error;
+  }
+  
+  state_dec_integer: {
+    state_start(TOKEN_TYPE_INTEGER);
+    if(is_dec_digit(c))       {advance_to(state_dec_integer)}
+    else if(c=='.')           {advance_to(state_float)}
+    else if(c=='}')           {token_finish(state_main)}
+    else if(c==0)             {token_finish(state_main)}
+    else if(is_whitespace(c)) {token_finish(state_main)}
+    else                      goto error;
+  }
+  
+  state_hex_integer: {
+    state_start(TOKEN_TYPE_INTEGER);
+    if(is_hex_digit(c))       {advance_to(state_hex_integer)}
+    else if(c=='}')           {token_finish(state_main)}
+    else if(c==0)             {token_finish(state_main)}
+    else if(is_whitespace(c)) {token_finish(state_main)}
+    else                      goto error;
+  }
+  
+  state_bin_integer: {
+    state_start(TOKEN_TYPE_INTEGER);
+    if(is_bin_digit(c))       {advance_to(state_bin_integer)}
+    else if(c=='}')           {token_finish(state_main)}
+    else if(c==0)             {token_finish(state_main)}
+    else if(is_whitespace(c)) {token_finish(state_main)}
+    else                      goto error;
+  }
+  
+  state_float: {
+    state_start(TOKEN_TYPE_FLOAT);
+    if(is_dec_digit(c))       {advance_to(state_float)}
+    else if(c=='}')           {token_finish(state_main)}
+    else if(c==0)             {token_finish(state_main)}
+    else if(is_whitespace(c)) {token_finish(state_main)}
+    else                      goto error;
+  }
+  
+  state_array_start: {
+    state_start(TOKEN_TYPE_ARRAY_OPEN);
+    {token_finish(state_main)}
+    
+    debug_variable_unused(c);
+  }
+  
+  state_array_end: {
+    state_start(TOKEN_TYPE_ARRAY_CLOSE);
+    {token_finish(state_main)}
+    
+    debug_variable_unused(c);
+  }
+  
+  state_string: {
+    state_start(TOKEN_TYPE_STRING);
+    if(c=='\\')               {advance_to(state_string_screen)}
+    else if(c=='"')           {token_finish(state_main)}
+    else if(c==0)             goto error;
+    else                      {advance_to(state_string)}
+  }
+  
+  state_string_screen: {advance_to(state_string)}
+  
+  end:
+  debug_variable_unused(list);
+  
+  return(true);
+  error: {
+    return(false);
+  }
+}
+
 struct {
   t_setting_type type;
   t_string name;
@@ -240,6 +413,13 @@ internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   t_setting_list settings = {0};
   t_link_list links = {0};
   
+  t_file_data configData = platform_load_file(filename);
+  bool shouldWriteNewConfig = (configData.ptr == false);
+  if(configData.ptr) {
+    parse_config_file(&settings, configData);
+  }
+  
+#if 0  
   t_setting colorCycleSetting = {0};
   colorCycleSetting.name = char_copy("color_cycle");
   colorCycleSetting.type = TYPE_ARRAY_INTEGER;
@@ -248,18 +428,14 @@ internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   colorCycleSetting.value_ai.ptr[0] = 0xff222222;
   colorCycleSetting.value_ai.ptr[1] = 0xffeeeeee;
   settings_add(&settings, colorCycleSetting);
+#endif
   
   link_create_ai(&links, char_count("color_cycle"), &appConfig->colorCycle);
   
   config_load_settings(&settings, &links);
   config_free_settings(&settings);
   
-  t_file_data configData = platform_load_file(filename);
-  if(configData.ptr) {
-    assert(0);
-  }
-  else {
-    // NOTE(bumbread): the file wasn't found. write a new one with the default config.
+  if(shouldWriteNewConfig) {
     app_write_config_to_file(appConfig, filename);
   }
 }
