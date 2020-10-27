@@ -321,21 +321,94 @@ internal void setting_copy(t_setting* dest, t_setting* source) {
   else assert(0);
 }
 
-internal u32 token_parse_integer(t_token* token) {
-  debug_variable_unused(token);
-  return(0);
+// TODO(bumbread): negative integers
+internal i64 token_parse_integer(t_token* token) {
+  char* c = token->start;
+  u32 index = 0;
+  
+  u32 base = 10;
+  if(token->len > 1) {
+    if(c[1] == 'x') {base = 16; c+= 2; index += 2;}
+    else if(c[1] == 'b') {base = 2; c += 2; index += 2;}
+  }
+  
+  i64 result = 0;
+  while(index < token->len) {
+    int digit = get_hex_digit(*c);
+    result *= base;
+    result += (u32)digit;
+    index += 1;
+    c += 1;
+  }
+  
+  return(result);
 }
 
-
-internal u32 token_parse_float(t_token* token) {
-  debug_variable_unused(token);
-  return(0);
+// TODO(bumbread): negative floating point numbers
+internal r64 token_parse_float(t_token* token) {
+  char* c = token->start;
+  u32 index = 0;
+  
+  r64 result = 0;
+  while(index < token->len) {
+    if(*c == '.') break;
+    int digit = get_hex_digit(*c);
+    result *= 10.0;
+    result += (r64)digit;
+    index += 1;
+    c += 1;
+  }
+  if(*c == '.') {
+    c += 1;
+    index += 1;
+  }
+  r64 divisor = 0;
+  while(index < token->len) {
+    if(*c == '.') break;
+    int digit = get_hex_digit(*c);
+    result *= 10.0;
+    divisor /= 10.0;
+    result += (r64)digit;
+    index += 1;
+    c += 1;
+  }
+  
+  return(result*divisor);
 }
 
 
 internal t_string token_parse_string(t_token* token) {
-  debug_variable_unused(token);
-  return((t_string) {0});
+  char* c = token->start;
+  u32 index = 0;
+  
+  assert(token->len >= 2);
+  t_string string;
+  string.len = 0;
+  string.ptr = malloc((token->len - 2) * sizeof(char));
+  
+  index = 1;
+  c += 1;
+  u32 i = 0;
+  while(index < token->len) {
+    if(*c == '\\') {
+      c += 1;
+      index += 1;
+      switch(*c) {
+        case('n'): string.ptr[i] = '\n'; break;
+        case('t'): string.ptr[i] = '\t'; break;
+      }
+      c += 1;
+      index += 1;
+    }
+    else {
+      string.ptr[i] = *c;
+      c += 1;
+      index += 1;
+    }
+    i += 1;
+  }
+  
+  return(string);
 }
 
 internal bool write_token_to_setting(t_setting_list* settings, t_setting* target, t_token* value) {
@@ -360,8 +433,85 @@ internal bool write_token_to_setting(t_setting_list* settings, t_setting* target
   return(true);
 }
 
+internal t_token_type get_token_primitive_type(t_setting_list* settings, t_token* token) {
+  switch((u32)token->type) {
+    case(TOKEN_TYPE_INTEGER): return(token->type);
+    case(TOKEN_TYPE_FLOAT): return(token->type);
+    case(TOKEN_TYPE_STRING): return(token->type);
+    case(TOKEN_TYPE_IDENTIFIER): {
+      t_setting* source = setting_from_token(settings, token);
+      if(source == 0) return(TOKEN_TYPE_UNDEFINED);
+      switch((u32)source->type) {
+        case(TYPE_INTEGER): return(TOKEN_TYPE_INTEGER);
+        case(TYPE_FLOAT): return(TOKEN_TYPE_FLOAT);
+        case(TYPE_STRING): return(TOKEN_TYPE_STRING);
+        default: return(TOKEN_TYPE_UNDEFINED);
+      }
+    }
+    default: assert(0);
+  }
+  
+  return(TOKEN_TYPE_UNDEFINED);
+}
+
+internal t_setting_type convert_element_type_to_array_type(t_token_type elementType) {
+  t_setting_type arrayType;
+  switch((u32)elementType) {
+    case(TOKEN_TYPE_INTEGER): arrayType = TYPE_ARRAY_INTEGER; break;
+    case(TOKEN_TYPE_FLOAT): arrayType = TYPE_ARRAY_FLOAT; break;
+    case(TOKEN_TYPE_STRING): arrayType = TYPE_ARRAY_STRING; break;
+    default: assert(0); return(0);
+  }
+  return(arrayType);
+}
+
 internal bool write_token_array_to_setting(t_setting_list* settings, t_setting* target, 
-                                           t_token* arrayFirst, u32 arrayCount) {
+                                           t_token* array, u32 arrayCount) {
+  if(arrayCount == 0) {
+    target->type = TYPE_ARRAY_INTEGER;
+    target->value_ai.len = 0;
+    target->value_ai.ptr = 0;
+  }
+  else {
+    t_token_type elementType = get_token_primitive_type(settings, &array[0]);
+    
+    t_setting_type arrayType = convert_element_type_to_array_type(elementType);
+    switch((u32)arrayType) {
+      case(TYPE_ARRAY_INTEGER): {
+        target->value_ai.len = arrayCount;
+        target->value_ai.ptr = malloc(target->value_ai.len * sizeof(u32));
+      } break;
+      case(TYPE_ARRAY_FLOAT): {
+        target->value_af.len = arrayCount;
+        target->value_af.ptr = malloc(target->value_af.len * sizeof(r32));
+      } break;
+      case(TYPE_ARRAY_STRING): {
+        target->value_as.len = arrayCount;
+        target->value_as.ptr = malloc(target->value_as.len * sizeof(t_string));
+      } break;
+      default: assert(0);
+    }
+    
+    
+    for(u32 arrayIndex = 0; arrayIndex < arrayCount; arrayIndex += 1) {
+      t_token* element = array + arrayIndex;
+      t_token_type currentType = get_token_primitive_type(settings, element);
+      if(currentType != elementType) return(false);
+      
+      switch((u32)elementType) {
+        case(TYPE_INTEGER): {
+          target->value_ai.ptr[arrayIndex] = (u32)token_parse_integer(element);
+        } break;
+        case(TYPE_FLOAT): {
+          target->value_af.ptr[arrayIndex] = (r32)token_parse_float(element);
+        } break;
+        case(TYPE_STRING): {
+          target->value_as.ptr[arrayIndex] = token_parse_string(element);
+        } break;
+        default: assert(0);
+      }
+    }
+  }
   
   return(true);
 }
@@ -387,10 +537,10 @@ internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) 
     t_setting* target = setting_from_token(settings, name);
     
     bool assigned = false;
-    if(value.type >= TOKEN_TYPE_IDENTIFIER && value.type <= TOKEN_TYPE_FLOAT) {
+    if(value->type >= TOKEN_TYPE_IDENTIFIER && value->type <= TOKEN_TYPE_FLOAT) {
       assigned = write_token_to_setting(settings, target, value);
     }
-    else if(value.type == TOKEN_TYPE_ARRAY_OPEN) {
+    else if(value->type == TOKEN_TYPE_ARRAY_OPEN) {
       if(tokenIndex >= tokens.count) goto error;
       t_token* arrayFirst = tokens.v + tokenIndex;
       t_token* arrayValue = arrayFirst;
@@ -400,7 +550,7 @@ internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) 
       loop {
         if(arrayValue->type == TOKEN_TYPE_ARRAY_CLOSE) break;
         if(tokenIndex >= tokens.count) goto error;
-        t_token* arrayValue = tokens.v + tokenIndex;
+        arrayValue = tokens.v + tokenIndex;
         tokenIndex += 1;
         arrayCount += 1;
       }
