@@ -38,56 +38,6 @@ internal void app_write_config_to_file(t_app_config* appConfig, t_string16 filen
 }
 
 enum {
-  TYPE_INTEGER,
-  TYPE_STRING,
-  TYPE_FLOAT,
-  TYPE_ARRAY_INTEGER,
-  TYPE_ARRAY_STRING,
-  TYPE_ARRAY_FLOAT,
-} typedef t_setting_type;
-
-struct {
-  t_string name;
-  t_setting_type type;
-  union {
-    i64 value_i;
-    r64 value_f;
-    t_string value_s;
-    t_array_i value_ai;
-    t_array_f value_af;
-    t_array_s value_as;
-  };
-} typedef t_setting;
-
-struct {
-  t_setting* v;
-  u32 count;
-  u32 alloc;
-} typedef t_setting_list;
-
-internal t_setting* settings_add(t_setting_list* list, t_setting setting) {
-  if(list->count + 1 > list->alloc) {
-    list->alloc *= 2;
-    if(list->alloc == 0) list->alloc = 1;
-    list->v = realloc(list->v, list->alloc * sizeof(t_setting));
-  }
-  t_setting* result = list->v + list->count;
-  *result = setting;
-  list->count += 1;
-  return(result);
-}
-
-internal t_setting* settings_find(t_setting_list* settings, t_string name) {
-  for(u32 settingIndex = 0; settingIndex < settings->count; settingIndex += 1) {
-    t_setting* setting = settings->v + settingIndex;
-    if(string_compare(setting->name, name)) {
-      return(setting);
-    }
-  }
-  return(0);
-}
-
-enum {
   TOKEN_TYPE_UNDEFINED,
   
   TOKEN_TYPE_IDENTIFIER,
@@ -100,7 +50,6 @@ enum {
   TOKEN_TYPE_ASSIGMENT,
   
   TOKEN_TYPE_EOF,
-  
 } typedef t_token_type;
 
 struct {
@@ -273,20 +222,79 @@ internal t_token_list lex_config_file(t_file_data fileData) {
   }
 }
 
-internal t_setting* setting_from_token(t_setting_list* settings, t_token* identifier) {
+
+enum {
+  TYPE_INTEGER,
+  TYPE_STRING,
+  TYPE_FLOAT,
+  TYPE_ARRAY_INTEGER,
+  TYPE_ARRAY_STRING,
+  TYPE_ARRAY_FLOAT,
+} typedef t_symbol_type;
+
+struct {
+  t_string name;
+  t_symbol_type type;
+  union {
+    i64 value_i;
+    r64 value_f;
+    t_string value_s;
+    t_array_i value_ai;
+    t_array_f value_af;
+    t_array_s value_as;
+  };
+} typedef t_symbol;
+
+struct {
+  t_symbol* v;
+  u32 count;
+  u32 alloc;
+} typedef t_symbol_table;
+
+internal t_symbol* symbol_push(t_symbol_table* list, t_symbol symbol) {
+  if(list->count + 1 > list->alloc) {
+    list->alloc *= 2;
+    if(list->alloc == 0) list->alloc = 1;
+    list->v = realloc(list->v, list->alloc * sizeof(t_symbol));
+  }
+  t_symbol* result = list->v + list->count;
+  *result = symbol;
+  list->count += 1;
+  return(result);
+}
+
+internal t_symbol* symbol_find_by_string(t_symbol_table* symbols, t_string name) {
+  for(u32 symbolIndex = 0; symbolIndex < symbols->count; symbolIndex += 1) {
+    t_symbol* symbol = symbols->v + symbolIndex;
+    if(string_compare(symbol->name, name)) {
+      return(symbol);
+    }
+  }
+  return(0);
+}
+
+internal t_symbol* symbol_find_by_token(t_symbol_table* symbols, t_token* identifier) {
   t_string identifierName;
   identifierName.ptr = identifier->start;
   identifierName.len = identifier->len;
-  t_setting* target = settings_find(settings, identifierName);
-  if(!target) {
-    t_setting newSetting = {0};
-    newSetting.name = identifierName;
-    target = settings_add(settings, newSetting);
-  }
-  return(target);
+  t_symbol* result = symbol_find_by_string(symbols, identifierName);
+  return(result);
 }
 
-internal void setting_copy(t_setting* dest, t_setting* source) {
+internal t_symbol* symbol_find_or_create_from_token(t_symbol_table* symbols, t_token* identifier) {
+  t_string identifierName;
+  identifierName.ptr = identifier->start;
+  identifierName.len = identifier->len;
+  t_symbol* result = symbol_find_by_string(symbols, identifierName);
+  if(!result) {
+    t_symbol newSymbol = {0};
+    newSymbol.name = string_copy_mem(identifierName);
+    result = symbol_push(symbols, newSymbol);
+  }
+  return(result);
+}
+
+internal void symbol_copy_value(t_symbol* dest, t_symbol* source) {
   dest->type = source->type;
   if(dest->type == TYPE_INTEGER) {
     dest->value_i = source->value_i;
@@ -411,7 +419,7 @@ internal t_string token_parse_string(t_token* token) {
   return(string);
 }
 
-internal bool write_token_to_setting(t_setting_list* settings, t_setting* target, t_token* value) {
+internal bool write_token_value_to_symbol(t_symbol_table* symbols, t_symbol* target, t_token* value) {
   if(value->type == TOKEN_TYPE_INTEGER) {
     target->type = TYPE_INTEGER;
     target->value_i = token_parse_integer(value);
@@ -425,21 +433,21 @@ internal bool write_token_to_setting(t_setting_list* settings, t_setting* target
     target->value_s = token_parse_string(value);
   }
   else if(value->type == TOKEN_TYPE_IDENTIFIER) {
-    t_setting* source = setting_from_token(settings, value);
+    t_symbol* source = symbol_find_by_token(symbols, value);
     if(source == 0) return(false); // TODO(bumbread): do we want this to be less strict?
-    setting_copy(target, source);
+    symbol_copy_value(target, source);
   }
   else assert(0);
   return(true);
 }
 
-internal t_token_type get_token_primitive_type(t_setting_list* settings, t_token* token) {
+internal t_token_type get_token_source_type(t_symbol_table* symbols, t_token* token) {
   switch((u32)token->type) {
     case(TOKEN_TYPE_INTEGER): return(token->type);
     case(TOKEN_TYPE_FLOAT): return(token->type);
     case(TOKEN_TYPE_STRING): return(token->type);
     case(TOKEN_TYPE_IDENTIFIER): {
-      t_setting* source = setting_from_token(settings, token);
+      t_symbol* source = symbol_find_by_token(symbols, token);
       if(source == 0) return(TOKEN_TYPE_UNDEFINED);
       switch((u32)source->type) {
         case(TYPE_INTEGER): return(TOKEN_TYPE_INTEGER);
@@ -450,73 +458,77 @@ internal t_token_type get_token_primitive_type(t_setting_list* settings, t_token
     }
     default: assert(0);
   }
-  
   return(TOKEN_TYPE_UNDEFINED);
 }
 
-internal t_setting_type convert_element_type_to_array_type(t_token_type elementType) {
-  t_setting_type arrayType;
+internal t_symbol_type get_corresponding_array_type(t_token_type elementType) {
+  t_symbol_type arrayType = 0;
   switch((u32)elementType) {
     case(TOKEN_TYPE_INTEGER): arrayType = TYPE_ARRAY_INTEGER; break;
     case(TOKEN_TYPE_FLOAT): arrayType = TYPE_ARRAY_FLOAT; break;
     case(TOKEN_TYPE_STRING): arrayType = TYPE_ARRAY_STRING; break;
-    default: assert(0); return(0);
+    default: assert(0);
   }
   return(arrayType);
 }
 
-internal bool write_token_array_to_setting(t_setting_list* settings, t_setting* target, 
-                                           t_token* array, u32 arrayCount) {
+internal bool write_token_array_to_symbol(t_symbol_table* symbols, t_symbol* target,
+                                          t_token* array, u32 arrayCount) {
   if(arrayCount == 0) {
     target->type = TYPE_ARRAY_INTEGER;
     target->value_ai.len = 0;
     target->value_ai.ptr = 0;
+    return(true);
   }
-  else {
-    t_token_type elementType = get_token_primitive_type(settings, &array[0]);
+  
+  t_token_type elementType = get_token_source_type(symbols, &array[0]);
+  if(elementType == TOKEN_TYPE_UNDEFINED) return(false);
+  
+  t_symbol_type arrayType = get_corresponding_array_type(elementType);
+  switch((u32)arrayType) {
+    case(TYPE_ARRAY_INTEGER): {
+      target->value_ai.len = arrayCount;
+      target->value_ai.ptr = malloc(target->value_ai.len * sizeof(u32));
+    } break;
+    case(TYPE_ARRAY_FLOAT): {
+      target->value_af.len = arrayCount;
+      target->value_af.ptr = malloc(target->value_af.len * sizeof(r32));
+    } break;
+    case(TYPE_ARRAY_STRING): {
+      target->value_as.len = arrayCount;
+      target->value_as.ptr = malloc(target->value_as.len * sizeof(t_string));
+    } break;
+    default: assert(0);
+  }
+  
+  for(u32 arrayIndex = 0; arrayIndex < arrayCount; arrayIndex += 1) {
+    t_token* element = array + arrayIndex;
+    t_token_type currentType = get_token_source_type(symbols, element);
+    if(currentType != elementType) return(false);
+  }
+  
+  for(u32 arrayIndex = 0; arrayIndex < arrayCount; arrayIndex += 1) {
+    t_token* element = array + arrayIndex;
     
-    t_setting_type arrayType = convert_element_type_to_array_type(elementType);
-    switch((u32)arrayType) {
-      case(TYPE_ARRAY_INTEGER): {
-        target->value_ai.len = arrayCount;
-        target->value_ai.ptr = malloc(target->value_ai.len * sizeof(u32));
+    // TODO(bumbread): WRONG!!! this should handle TOKEN_TYPE_* types
+    // including the TOKEN_TYPE_IDENTIFIER
+    switch((u32)elementType) {
+      case(TYPE_INTEGER): {
+        target->value_ai.ptr[arrayIndex] = (u32)token_parse_integer(element);
       } break;
-      case(TYPE_ARRAY_FLOAT): {
-        target->value_af.len = arrayCount;
-        target->value_af.ptr = malloc(target->value_af.len * sizeof(r32));
+      case(TYPE_FLOAT): {
+        target->value_af.ptr[arrayIndex] = (r32)token_parse_float(element);
       } break;
-      case(TYPE_ARRAY_STRING): {
-        target->value_as.len = arrayCount;
-        target->value_as.ptr = malloc(target->value_as.len * sizeof(t_string));
+      case(TYPE_STRING): {
+        target->value_as.ptr[arrayIndex] = token_parse_string(element);
       } break;
       default: assert(0);
     }
-    
-    
-    for(u32 arrayIndex = 0; arrayIndex < arrayCount; arrayIndex += 1) {
-      t_token* element = array + arrayIndex;
-      t_token_type currentType = get_token_primitive_type(settings, element);
-      if(currentType != elementType) return(false);
-      
-      switch((u32)elementType) {
-        case(TYPE_INTEGER): {
-          target->value_ai.ptr[arrayIndex] = (u32)token_parse_integer(element);
-        } break;
-        case(TYPE_FLOAT): {
-          target->value_af.ptr[arrayIndex] = (r32)token_parse_float(element);
-        } break;
-        case(TYPE_STRING): {
-          target->value_as.ptr[arrayIndex] = token_parse_string(element);
-        } break;
-        default: assert(0);
-      }
-    }
   }
-  
   return(true);
 }
 
-internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) {
+internal bool parse_config_file(t_symbol_table* symbols, t_file_data fileData) {
   t_token_list tokens = lex_config_file(fileData);
   u32 tokenIndex = 0;
   loop {
@@ -534,11 +546,11 @@ internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) 
     
     if(op->type != TOKEN_TYPE_ASSIGMENT) goto error;
     if(name->type != TOKEN_TYPE_IDENTIFIER) goto error;
-    t_setting* target = setting_from_token(settings, name);
+    t_symbol* target = symbol_find_or_create_from_token(symbols, name);
     
     bool assigned = false;
     if(value->type >= TOKEN_TYPE_IDENTIFIER && value->type <= TOKEN_TYPE_FLOAT) {
-      assigned = write_token_to_setting(settings, target, value);
+      assigned = write_token_value_to_symbol(symbols, target, value);
     }
     else if(value->type == TOKEN_TYPE_ARRAY_OPEN) {
       if(tokenIndex >= tokens.count) goto error;
@@ -554,19 +566,36 @@ internal bool parse_config_file(t_setting_list* settings, t_file_data fileData) 
         tokenIndex += 1;
         arrayCount += 1;
       }
-      assigned = write_token_array_to_setting(settings, target, arrayFirst, arrayCount);
+      assigned = write_token_array_to_symbol(symbols, target, arrayFirst, arrayCount);
     }
     
     if(!assigned) goto error;
   }
   
   return(true);
-  error:
-  return(false);
+  error: return(false);
+}
+
+internal void config_free_symbols(t_symbol_table* symbols) {
+  for(u32 symbolIndex = 0; symbolIndex < symbols->count; symbolIndex += 1) {
+    t_symbol* symbol = symbols->v + symbolIndex;
+    if (symbol->type == TYPE_STRING) {if(symbol->value_s.ptr) free(symbol->value_s.ptr); }
+    else if(symbol->type == TYPE_ARRAY_INTEGER) {if(symbol->value_ai.ptr) free(symbol->value_ai.ptr); }
+    else if(symbol->type == TYPE_ARRAY_FLOAT) {if(symbol->value_af.ptr) free(symbol->value_af.ptr); }
+    else if(symbol->type == TYPE_ARRAY_STRING) {
+      if(symbol->value_as.ptr) {
+        for(u32 stringIndex = 0; stringIndex < symbol->value_as.len; stringIndex += 1) {
+          free(symbol->value_as.ptr[stringIndex].ptr);
+        }
+        free(symbol->value_as.ptr);
+      }
+    }
+  }
+  free(symbols->v);
 }
 
 struct {
-  t_setting_type type;
+  t_symbol_type type;
   t_string name;
   union {
     i64* value_i;
@@ -576,26 +605,26 @@ struct {
     t_array_f* value_af;
     t_array_s* value_as;
   };
-} typedef t_setting_link;
+} typedef t_symbol_link;
 
 struct {
-  t_setting_link* v;
+  t_symbol_link* v;
   u32 count;
   u32 alloc;
 } typedef t_link_list;
 
-internal void link_add(t_link_list* list, t_setting_link link) {
+internal void link_add(t_link_list* list, t_symbol_link link) {
   if(list->count + 1 > list->alloc) {
     list->alloc *= 2;
     if(list->alloc == 0) list->alloc = 1;
-    list->v = realloc(list->v, list->alloc * sizeof(t_setting_link));
+    list->v = realloc(list->v, list->alloc * sizeof(t_symbol_link));
   }
   list->v[list->count] = link;
   list->count += 1;
 }
 
 internal void link_create_i(t_link_list* list, t_string name, i64* value) {
-  t_setting_link result = {0};
+  t_symbol_link result = {0};
   result.type = TYPE_INTEGER;
   result.name = name;
   result.value_i = value;
@@ -603,7 +632,7 @@ internal void link_create_i(t_link_list* list, t_string name, i64* value) {
 }
 
 internal void link_create_f(t_link_list* list, t_string name, r64* value) {
-  t_setting_link result = {0};
+  t_symbol_link result = {0};
   result.type = TYPE_FLOAT;
   result.name = name;
   result.value_f = value;
@@ -611,7 +640,7 @@ internal void link_create_f(t_link_list* list, t_string name, r64* value) {
 }
 
 internal void link_create_s(t_link_list* list, t_string name, t_string* value) {
-  t_setting_link result = {0};
+  t_symbol_link result = {0};
   result.type = TYPE_STRING;
   result.name = name;
   result.value_s = value;
@@ -619,7 +648,7 @@ internal void link_create_s(t_link_list* list, t_string name, t_string* value) {
 }
 
 internal void link_create_ai(t_link_list* list, t_string name, t_array_i* value) {
-  t_setting_link result = {0};
+  t_symbol_link result = {0};
   result.type = TYPE_ARRAY_INTEGER;
   result.name = name;
   result.value_ai = value;
@@ -627,7 +656,7 @@ internal void link_create_ai(t_link_list* list, t_string name, t_array_i* value)
 }
 
 internal void link_create_af(t_link_list* list, t_string name, t_array_f* value) {
-  t_setting_link result = {0};
+  t_symbol_link result = {0};
   result.type = TYPE_ARRAY_FLOAT;
   result.name = name;
   result.value_af = value;
@@ -635,54 +664,55 @@ internal void link_create_af(t_link_list* list, t_string name, t_array_f* value)
 }
 
 internal void link_create_as(t_link_list* list, t_string name, t_array_s* value) {
-  t_setting_link result = {0};
+  t_symbol_link result = {0};
   result.type = TYPE_ARRAY_STRING;
   result.name = name;
   result.value_as = value;
   link_add(list, result);
 }
 
-internal void config_load_settings(t_setting_list* settings, t_link_list* links) {
-  for(u32 settingIndex = 0; settingIndex < settings->count; settingIndex += 1) {
-    t_setting* currentSetting = settings->v + settingIndex;
+internal void config_initialize_links(t_symbol_table* symbols, t_link_list* links) {
+  for(u32 symbolIndex = 0; symbolIndex < symbols->count; symbolIndex += 1) {
+    t_symbol* symbol = symbols->v + symbolIndex;
     for(u32 linkIndex = 0; linkIndex < links->count; linkIndex += 1) {
-      t_setting_link* link = links->v + linkIndex;
+      t_symbol_link* link = links->v + linkIndex;
       
-      if(string_compare(link->name, currentSetting->name)) {
-        if(link->type == currentSetting->type 
-           || (currentSetting->type == TYPE_INTEGER && currentSetting->value_ai.len == 0)) {
+      if(string_compare(link->name, symbol->name)) {
+        // TODO(bumbread): make sure link type is an array type!!!
+        if(link->type == symbol->type 
+           || (symbol->type == TYPE_INTEGER && symbol->value_ai.len == 0)) {
           switch(link->type) {
             case(TYPE_INTEGER): {
-              *link->value_i = currentSetting->value_i;
+              *link->value_i = symbol->value_i;
             } break;
             case(TYPE_FLOAT): {
-              *link->value_f = currentSetting->value_f;
+              *link->value_f = symbol->value_f;
             } break;
             case(TYPE_STRING): {
-              *link->value_s = string_copy_mem(currentSetting->value_s);
+              *link->value_s = string_copy_mem(symbol->value_s);
             } break;
             case(TYPE_ARRAY_INTEGER): {
-              link->value_ai->len = currentSetting->value_ai.len;
+              link->value_ai->len = symbol->value_ai.len;
               if(link->value_ai->ptr) free(link->value_ai->ptr);
               link->value_ai->ptr = malloc(link->value_ai->len * sizeof(u32));
-              for(u32 valueIndex = 0; valueIndex < currentSetting->value_ai.len; valueIndex += 1) {
-                link->value_ai->ptr[valueIndex] = currentSetting->value_ai.ptr[valueIndex];
+              for(u32 valueIndex = 0; valueIndex < symbol->value_ai.len; valueIndex += 1) {
+                link->value_ai->ptr[valueIndex] = symbol->value_ai.ptr[valueIndex];
               }
             } break;
             case(TYPE_ARRAY_FLOAT): {
-              link->value_af->len = currentSetting->value_af.len;
+              link->value_af->len = symbol->value_af.len;
               if(link->value_af->ptr) free(link->value_af->ptr);
               link->value_af->ptr = malloc(link->value_af->len * sizeof(r32));
-              for(u32 valueIndex = 0; valueIndex < currentSetting->value_af.len; valueIndex += 1) {
-                link->value_af->ptr[valueIndex] = currentSetting->value_af.ptr[valueIndex];
+              for(u32 valueIndex = 0; valueIndex < symbol->value_af.len; valueIndex += 1) {
+                link->value_af->ptr[valueIndex] = symbol->value_af.ptr[valueIndex];
               }
             } break;
             case(TYPE_ARRAY_STRING): {
-              link->value_as->len = currentSetting->value_as.len;
+              link->value_as->len = symbol->value_as.len;
               if(link->value_as->ptr) free(link->value_as->ptr);
               link->value_as->ptr = malloc(link->value_as->len * sizeof(u32));
-              for(u32 valueIndex = 0; valueIndex < currentSetting->value_as.len; valueIndex += 1) {
-                link->value_as->ptr[valueIndex] = string_copy_mem(currentSetting->value_as.ptr[valueIndex]);
+              for(u32 valueIndex = 0; valueIndex < symbol->value_as.len; valueIndex += 1) {
+                link->value_as->ptr[valueIndex] = string_copy_mem(symbol->value_as.ptr[valueIndex]);
               }
             } break;
           }
@@ -693,32 +723,7 @@ internal void config_load_settings(t_setting_list* settings, t_link_list* links)
       }
       
     }
-    
   }
-}
-
-internal void config_free_settings(t_setting_list* settings) {
-  for(u32 settingIndex = 0; settingIndex < settings->count; settingIndex += 1) {
-    t_setting* setting = settings->v + settingIndex;
-    if(setting->type == TYPE_ARRAY_INTEGER) {
-      if(setting->value_ai.ptr) free(setting->value_ai.ptr);
-    }
-    else if(setting->type == TYPE_STRING) {
-      if(setting->value_s.ptr) free(setting->value_s.ptr);
-    }
-    else if(setting->type == TYPE_ARRAY_FLOAT) {
-      if(setting->value_af.ptr) free(setting->value_af.ptr);
-    }
-    else if(setting->type == TYPE_ARRAY_STRING) {
-      if(setting->value_as.ptr) {
-        for(u32 stringIndex = 0; stringIndex < setting->value_as.len; stringIndex += 1) {
-          free(setting->value_as.ptr[stringIndex].ptr);
-        }
-        free(setting->value_as.ptr);
-      }
-    }
-  }
-  free(settings->v);
 }
 
 internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
@@ -728,33 +733,20 @@ internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   // TODO(bumbread): this code is for testing.
   // remove this later.
   
-  t_setting_list settings = {0};
-  t_link_list links = {0};
-  
   //t_file_data configData = platform_load_file(filename);
   t_file_data configData = {0};
   configData.ptr = "color_test_count = 2;\ncolor_array= {2,4,test,\"wh\\\"at?\"\n}\nstring=\"test\"";
   
+  t_symbol_table symbols = {0};
   bool shouldWriteNewConfig = (configData.ptr == false);
   if(configData.ptr) {
-    parse_config_file(&settings, configData);
+    parse_config_file(&symbols, configData);
   }
   
-#if 0  
-  t_setting colorCycleSetting = {0};
-  colorCycleSetting.name = char_copy("color_cycle");
-  colorCycleSetting.type = TYPE_ARRAY_INTEGER;
-  colorCycleSetting.value_ai.len = 2;
-  colorCycleSetting.value_ai.ptr = malloc(2 * sizeof(u32));
-  colorCycleSetting.value_ai.ptr[0] = 0xff222222;
-  colorCycleSetting.value_ai.ptr[1] = 0xffeeeeee;
-  settings_add(&settings, colorCycleSetting);
-#endif
-  
+  t_link_list links = {0};
   link_create_ai(&links, char_count("color_cycle"), &appConfig->colorCycle);
-  
-  config_load_settings(&settings, &links);
-  config_free_settings(&settings);
+  config_initialize_links(&symbols, &links);
+  config_free_symbols(&symbols);
   
   if(shouldWriteNewConfig) {
     app_write_config_to_file(appConfig, filename);
