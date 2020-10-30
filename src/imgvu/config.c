@@ -437,7 +437,7 @@ internal bool write_token_value_to_symbol(t_symbol_table* symbols, t_symbol* tar
   }
   else if(value->type == TOKEN_TYPE_STRING) {
     target->type = TYPE_STRING;
-    target->value_s = token_parse_string(value);
+    target->value_s = string_copy_mem(token_parse_string(value));
   }
   else if(value->type == TOKEN_TYPE_IDENTIFIER) {
     t_symbol* source = symbol_find_by_token(symbols, value);
@@ -526,7 +526,7 @@ internal bool write_token_array_to_symbol(t_symbol_table* symbols, t_symbol* tar
         target->value_af.ptr[arrayIndex] = (r32)token_parse_float(element);
       } break;
       case(TOKEN_TYPE_STRING): {
-        target->value_as.ptr[arrayIndex] = token_parse_string(element);
+        target->value_as.ptr[arrayIndex] = string_copy_mem(token_parse_string(element));
       } break;
       case(TOKEN_TYPE_IDENTIFIER): {
         if(!write_token_value_to_symbol(symbols, target, element)) return(false);
@@ -753,7 +753,7 @@ internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   
   //t_file_data configData = platform_load_file(filename);
   t_file_data configData = {0};
-  configData.ptr = "color_test_count = 2; color_cycle={0xff000000, 0xffffffff}";
+  configData.ptr = "color_test_count = 2; color_cycle={\"\", \"hello\"}";
   
   t_symbol_table symbols = {0};
   bool shouldWriteNewConfig = (configData.ptr == false);
