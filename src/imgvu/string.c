@@ -127,6 +127,36 @@ internal t_string string_concatenate_mem(t_string first, t_string second) {
   return(result);
 }
 
+internal void string_append(t_string* dest, t_string source) {
+  if(source.len != 0) {
+    u32 endIndex = dest->len;
+    dest->len += source.len;
+    dest->ptr = realloc(dest->ptr, (dest->len+1) * sizeof(char));
+    char* sourcePtr = source.ptr;
+    for(u32 i = endIndex; i < dest->len; i += 1) {
+      dest->ptr[i] = *sourcePtr;
+      sourcePtr += 1;
+    }
+    dest->ptr[dest->len] = 0;
+  }
+}
+
+internal void string_reverse(t_string* dest) {
+  u32 halfIndex = dest->len / 2;
+  for(u32 index = 0; index < halfIndex; index += 1) {
+    char temp = dest->ptr[index];
+    dest->ptr[index] = dest->ptr[dest->len-index-1];
+    dest->ptr[dest->len-index-1] = temp;
+  }
+}
+
+internal void string_append_char(t_string* dest, char source) {
+  dest->len += 1;
+  dest->ptr = realloc(dest->ptr, (dest->len+1) * sizeof(char));
+  dest->ptr[dest->len - 1] = source;
+  dest->ptr[dest->len] = 0;
+}
+
 internal bool string_begins_with(t_string string, t_string sub) {
   if(string.len < sub.len) return(false);
   for(u32 charIndex = 0; charIndex < string.len; charIndex += 1) {

@@ -21,17 +21,11 @@ struct {
 
 internal void config_load_default(t_app_config* appConfig) {
   appConfig->error = false;
-  appConfig->colorCycle.len = 1;
+  appConfig->colorCycle.len = 2;
   appConfig->colorCycle.ptr = malloc(appConfig->colorCycle.len * sizeof(u32));
-  appConfig->colorCycle.ptr[0] = 0xffff00ff;
+  appConfig->colorCycle.ptr[0] = 0xff000000;
+  appConfig->colorCycle.ptr[1] = 0xffffffff;
   appConfig->backgroundColor = 0;
-}
-
-internal void app_write_config_to_file(t_app_config* appConfig, t_string16 filename) {
-  t_file_data output = {0};
-  output.filename = filename;
-  platform_write_file(output);
-  debug_variable_unused(appConfig);
 }
 
 enum {
@@ -643,6 +637,10 @@ internal void link_add(t_link_list* list, t_symbol_link link) {
   list->count += 1;
 }
 
+internal void link_free(t_link_list* links) {
+  free(links->v);
+}
+
 internal void link_create_i(t_link_list* list, t_string name, i64* value) {
   t_symbol_link result = {0};
   result.type = TYPE_INTEGER;
@@ -746,15 +744,124 @@ internal void config_initialize_links(t_symbol_table* symbols, t_link_list* link
   }
 }
 
+internal t_string write_int_to_string(i64 value) {
+  assert(value > 0);
+  t_string result = {0};
+  while(value != 0) {
+    string_append_char(&result, (value % 10) + '0');
+    value /= 10;
+  }
+  string_reverse(&result);
+  return(result);
+}
+
+internal t_string write_float_to_string(r64 value) {
+  assert(value > 0);
+  i64 wholePart = (i64)value; // TODO(bumbread): this assumes the rounding method used by the compiler
+  r64 remainder = value - (r64)((i64)wholePart);
+  t_string result = write_int_to_string(wholePart);
+  for(u32 digit = 0; digit < 6; digit += 1) {
+    remainder *= 10.0;
+    string_append_char(&result, ((char)remainder) + '0');
+    remainder = remainder - (r64)((i64)remainder); // TODO(bumbread): make this more clear
+  }
+  return(result);
+}
+
+// TODO(bumbread): fix memory leak. some of these results have zero length
+// at the initialization, causing string_append* functions to call realloc
+// on pointer that wasn't previously allocated, causing it to call malloc
+// and the value of the string gets thrown away after it is assigned.
+
+internal t_string write_string_to_string(t_string value) {
+  t_string result = {0};
+  string_append_char(&result, '"');
+  string_append(&result, value);
+  string_append_char(&result, '"');
+  return(result);
+}
+
+internal t_string write_int_array_to_string(t_array_i value) {
+  t_string result = {0};
+  string_append_char(&result, '{');
+  for(u32 index = 0; index < value.len; index += 1) {
+    t_string number = write_int_to_string(value.ptr[index]);
+    string_append(&result, number);
+    if(index != value.len - 1) {
+      string_append_char(&result, ',');
+      string_append_char(&result, ' ');
+    }
+  }
+  string_append_char(&result, '}');
+  return(result);
+}
+
+internal t_string write_float_array_to_string(t_array_f value) {
+  t_string result = {0};
+  string_append_char(&result, '{');
+  for(u32 index = 0; index < value.len; index += 1) {
+    t_string number = write_float_to_string((r64)value.ptr[index]);
+    string_append(&result, number);
+    if(index != value.len - 1) {
+      string_append_char(&result, ',');
+      string_append_char(&result, ' ');
+    }
+  }
+  string_append_char(&result, '}');
+  return(result);
+}
+
+internal t_string write_string_array_to_string(t_array_s value) {
+  t_string result = {0};
+  string_append_char(&result, '{');
+  for(u32 index = 0; index < value.len; index += 1) {
+    t_string number = write_string_to_string(value.ptr[index]);
+    string_append(&result, number);
+    if(index != value.len - 1) {
+      string_append_char(&result, ',');
+      string_append_char(&result, ' ');
+    }
+  }
+  string_append_char(&result, '}');
+  return(result);
+}
+
+internal void app_write_config_links_to_file(t_link_list* links, t_string16 filename) {
+  t_file_data output = {0};
+  output.filename = filename;
+  
+  t_string outputBuffer = {0};
+  for(u32 linkIndex = 0; linkIndex < links->count; linkIndex += 1) {
+    t_symbol_link* link = links->v + linkIndex;
+    string_append(&outputBuffer, link->name);
+    string_append(&outputBuffer, char_count("="));
+    
+    t_string value = {0};
+    switch(link->type) {
+      case(TYPE_INTEGER): value = write_int_to_string(*link->value_i); break;
+      case(TYPE_FLOAT): value = write_float_to_string(*link->value_f); break;
+      case(TYPE_STRING): value = write_string_to_string(*link->value_s); break;
+      case(TYPE_ARRAY_INTEGER): value = write_int_array_to_string(*link->value_ai); break;
+      case(TYPE_ARRAY_FLOAT): value = write_float_array_to_string(*link->value_af); break;
+      case(TYPE_ARRAY_STRING): value = write_string_array_to_string(*link->value_as); break;
+    }
+    string_append(&outputBuffer, value);
+    string_append_char(&outputBuffer, ';');
+    string_append_char(&outputBuffer, '\n');
+  }
+  
+  output.size = (u64)outputBuffer.len;
+  output.ptr = outputBuffer.ptr;
+  platform_write_file(output);
+  free(outputBuffer.ptr);
+}
+
 internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   debug_variable_unused(appConfig);
   
   config_load_default(appConfig);
   
-  //t_file_data configData = platform_load_file(filename);
-  t_file_data configData = {0};
-  configData.ptr = "color_test_count = 2; color_cycle={\"\", \"hello\"}";
-  
+  t_file_data configData = platform_load_file(filename);
   t_symbol_table symbols = {0};
   bool shouldWriteNewConfig = (configData.ptr == 0);
   if(configData.ptr) {
@@ -767,6 +874,8 @@ internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   config_free_symbols(&symbols);
   
   if(shouldWriteNewConfig) {
-    app_write_config_to_file(appConfig, filename);
+    app_write_config_links_to_file(&links, filename);
   }
+  
+  link_free(&links);
 }
