@@ -181,20 +181,20 @@ internal t_token_list lex_config_file(t_file_data fileData) {
     
     state_array_start: {
       state_start(TOKEN_TYPE_ARRAY_OPEN);
-      {token_finish(state_main)}
       debug_variable_unused(c);
+      {token_finish(state_main)}
     }
     
     state_array_end: {
       state_start(TOKEN_TYPE_ARRAY_CLOSE);
-      {token_finish(state_main)}
       debug_variable_unused(c);
+      {token_finish(state_main)}
     }
     
     state_assigment: {
       state_start(TOKEN_TYPE_ASSIGMENT);
-      {token_finish(state_main)}
       debug_variable_unused(c);
+      {token_finish(state_main)}
     }
     
     state_string: {
@@ -756,7 +756,7 @@ internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   configData.ptr = "color_test_count = 2; color_cycle={\"\", \"hello\"}";
   
   t_symbol_table symbols = {0};
-  bool shouldWriteNewConfig = (configData.ptr == false);
+  bool shouldWriteNewConfig = (configData.ptr == 0);
   if(configData.ptr) {
     parse_config_file(&symbols, configData);
   }

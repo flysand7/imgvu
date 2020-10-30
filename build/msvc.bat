@@ -16,7 +16,7 @@ REM =================
 REM COMPILATION SETUP
 REM =================
 
-set warnings=-w34191 -w44242 -w44254 -w44255 -w44288 -wd4710
+set warnings=-w34191 -w44242 -w44254 -w44255 -w44288 -wd4710 -wd4201
 set cmp_flags=%mode% %defines% -nologo -FC -Wall -WX -TC -Ob1 -Oi -EHa -c -Zp4 -wd5045 %warnings%
 set cmp_flags=%cmp_flags% -Qspectre
 

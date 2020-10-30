@@ -110,7 +110,6 @@ internal t_string string_copy_mem(t_string string) {
   return(result);
 }
 
-#if 0
 internal t_string string_concatenate_mem(t_string first, t_string second) {
   t_string result;
   result.len = first.len + second.len;
@@ -135,7 +134,6 @@ internal bool string_begins_with(t_string string, t_string sub) {
   }
   return(false);
 }
-#endif
 
 internal bool string_compare(t_string string1, t_string string2) {
   if(string1.len != string2.len) return(false);
