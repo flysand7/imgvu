@@ -1,6 +1,3 @@
-
-//#include<stdio.h>
-
 struct {
   u32 len;
   u32* ptr;
