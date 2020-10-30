@@ -507,6 +507,7 @@ internal bool write_token_array_to_symbol(t_symbol_table* symbols, t_symbol* tar
     } break;
     default: assert(0);
   }
+  target->type = arrayType;
   
   for(u32 arrayIndex = 0; arrayIndex < arrayCount; arrayIndex += 1) {
     t_token* element = array + arrayIndex;
@@ -752,7 +753,7 @@ internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   
   //t_file_data configData = platform_load_file(filename);
   t_file_data configData = {0};
-  configData.ptr = "color_test_count = 2;\ncolor_array= {2,4,test,\"wh\\\"at?\"\n}\nstring=\"test\"";
+  configData.ptr = "color_test_count = 2; color_cycle={0xff000000, 0xffffffff}";
   
   t_symbol_table symbols = {0};
   bool shouldWriteNewConfig = (configData.ptr == false);
