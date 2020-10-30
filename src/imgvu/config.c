@@ -278,6 +278,16 @@ internal t_symbol* symbol_find_by_token(t_symbol_table* symbols, t_token* identi
   return(result);
 }
 
+internal t_symbol* symbol_create_from_token(t_symbol_table* symbols, t_token* identifier) {
+  t_string identifierName;
+  identifierName.ptr = identifier->start;
+  identifierName.len = identifier->len;
+  t_symbol newSymbol = {0};
+  newSymbol.name = string_copy_mem(identifierName);
+  t_symbol* result = symbol_push(symbols, newSymbol);
+  return(result);
+}
+
 internal t_symbol* symbol_find_or_create_from_token(t_symbol_table* symbols, t_token* identifier) {
   t_string identifierName;
   identifierName.ptr = identifier->start;
@@ -507,17 +517,18 @@ internal bool write_token_array_to_symbol(t_symbol_table* symbols, t_symbol* tar
   for(u32 arrayIndex = 0; arrayIndex < arrayCount; arrayIndex += 1) {
     t_token* element = array + arrayIndex;
     
-    // TODO(bumbread): WRONG!!! this should handle TOKEN_TYPE_* types
-    // including the TOKEN_TYPE_IDENTIFIER
     switch((u32)elementType) {
-      case(TYPE_INTEGER): {
+      case(TOKEN_TYPE_INTEGER): {
         target->value_ai.ptr[arrayIndex] = (u32)token_parse_integer(element);
       } break;
-      case(TYPE_FLOAT): {
+      case(TOKEN_TYPE_FLOAT): {
         target->value_af.ptr[arrayIndex] = (r32)token_parse_float(element);
       } break;
-      case(TYPE_STRING): {
+      case(TOKEN_TYPE_STRING): {
         target->value_as.ptr[arrayIndex] = token_parse_string(element);
+      } break;
+      case(TOKEN_TYPE_IDENTIFIER): {
+        if(!write_token_value_to_symbol(symbols, target, element)) return(false);
       } break;
       default: assert(0);
     }
@@ -543,7 +554,13 @@ internal bool parse_config_file(t_symbol_table* symbols, t_file_data fileData) {
     
     if(op->type != TOKEN_TYPE_ASSIGMENT) goto error;
     if(name->type != TOKEN_TYPE_IDENTIFIER) goto error;
-    t_symbol* target = symbol_find_or_create_from_token(symbols, name);
+    
+    bool overwrite = true;
+    t_symbol* target = symbol_find_by_token(symbols, name);
+    if(!target) {
+      overwrite = false;
+      target = symbol_create_from_token(symbols, name);
+    }
     
     bool assigned = false;
     if(value->type >= TOKEN_TYPE_IDENTIFIER && value->type <= TOKEN_TYPE_FLOAT) {
@@ -566,7 +583,12 @@ internal bool parse_config_file(t_symbol_table* symbols, t_file_data fileData) {
       assigned = write_token_array_to_symbol(symbols, target, arrayFirst, arrayCount);
     }
     
-    if(!assigned) goto error;
+    if(!assigned) {
+      if(!overwrite) {
+        symbols->count -= 1;
+      }
+      goto error;
+    }
   }
   
   return(true);
