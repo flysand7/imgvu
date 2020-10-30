@@ -727,8 +727,6 @@ internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   debug_variable_unused(appConfig);
   
   config_load_default(appConfig);
-  // TODO(bumbread): this code is for testing.
-  // remove this later.
   
   //t_file_data configData = platform_load_file(filename);
   t_file_data configData = {0};
