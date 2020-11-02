@@ -728,7 +728,7 @@ internal void config_initialize_links(t_symbol_table* symbols, t_link_list* link
             case(TYPE_ARRAY_STRING): {
               link->value_as->len = symbol->value_as.len;
               if(link->value_as->ptr) free(link->value_as->ptr);
-              link->value_as->ptr = malloc(link->value_as->len * sizeof(u32));
+              link->value_as->ptr = malloc(link->value_as->len * sizeof(t_string));
               for(u32 valueIndex = 0; valueIndex < symbol->value_as.len; valueIndex += 1) {
                 link->value_as->ptr[valueIndex] = string_copy_mem(symbol->value_as.ptr[valueIndex]);
               }
