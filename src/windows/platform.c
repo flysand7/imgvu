@@ -50,66 +50,14 @@ internal t_image* platform_get_current_image(t_directory_state* dirState) {
 // TODO(bumbread): should make abstract color structure that describes color in a
 // platform independent way.
 internal void platform_clear_screen(u32 color) {
-  
-  for(u32 row = 0; row < g_window.clientHeight; row += 1) {
-    for(u32 column = 0; column < g_window.clientWidth; column += 1) {
-      g_window.pixels[row*g_window.clientWidth + column] = color;
-    }
-  }
-  
+  //clear_screen_gdi(color);
+  //clear_screen_gl(color);
+  debug_variable_unused(color);
 }
 
 internal void platform_draw_image(t_location* loc, t_image* image) {
-  i32 maxWidth = (i32)g_window.clientWidth;
-  i32 maxHeight = (i32)g_window.clientHeight;
-  
-  i32 xPosition = (i32)loc->posX;
-  i32 yPosition = (i32)loc->posY;
-  i32 width = (i32)image->width;
-  i32 height = (i32)image->height;
-  
-  if(xPosition >= maxWidth) return;
-  if(yPosition >= maxHeight) return;
-  if(xPosition + maxWidth <= 0) return;
-  if(yPosition + maxHeight <= 0) return;
-  
-  if(xPosition < 0) { 
-    width += xPosition;
-    xPosition = 0;
-  }
-  if(yPosition < 0) {
-    height += yPosition;
-    yPosition = 0;
-  }
-  if(xPosition + width > maxWidth) {
-    i32 over = xPosition + width - maxWidth;
-    assert(over > 0);
-    width -= over;
-  }
-  if(yPosition + height > maxHeight) {
-    i32 over = yPosition + height - maxHeight;
-    assert(over > 0);
-    height -= over;
-  }
-  
-  assert(xPosition >= 0);
-  assert(yPosition >= 0);
-  assert(xPosition + width <= maxWidth);
-  assert(yPosition + height <= maxHeight);
-  
-  u32* targetRow = g_window.pixels + (u32)yPosition*g_window.clientWidth + (u32)xPosition;
-  u32* sourceRow = image->pixels;
-  for(i32 row = 0; row < height; row += 1) {
-    u32* targetPixel = targetRow;
-    u32* sourcePixel = sourceRow;
-    for(i32 column = 0; column < width; column += 1) {
-      *targetPixel = *sourcePixel;
-      targetPixel += 1;
-      sourcePixel += 1;
-    }
-    sourceRow += image->width;
-    targetRow += g_window.clientWidth;
-  }
+  //draw_image_gdi(loc, image);
+  draw_image_gl(loc, image);
 }
 
 internal t_file_data platform_load_file(t_string16 fullFilename) {

@@ -14,12 +14,14 @@
 // SORTPP_PASS
 #define SORTPP_PASS
 #include<Windows.h>
+#include<gl/GL.h>
 #include<Shlwapi.h> // PathFileExistsW
 #include<UserEnv.h> // GetAllUsersProfileDirectoryW
 #pragma warning(pop)
 
 struct {
   HWND handle;
+  HDC deviceContext;
   u32 clientWidth;
   u32 clientHeight;
   u32* pixels;
@@ -38,24 +40,6 @@ resize_window(t_window* window, u32 newClientWidth, u32 newClientHeight) {
   }
 }
 
-internal void
-paint_window_gdi(t_window* window, HDC deviceContext) {
-  assert(window->pixels);
-  
-  BITMAPINFO bitmapInfo = {0};
-  bitmapInfo.bmiHeader.biSize = sizeof(BITMAPINFO);
-  bitmapInfo.bmiHeader.biWidth = (LONG)window->clientWidth;
-  bitmapInfo.bmiHeader.biHeight = (LONG)window->clientHeight;
-  bitmapInfo.bmiHeader.biPlanes = 1;
-  bitmapInfo.bmiHeader.biBitCount = 32;
-  bitmapInfo.bmiHeader.biCompression = BI_RGB;
-  
-  StretchDIBits(deviceContext, 
-                0, 0, (LONG)window->clientWidth, (LONG)window->clientHeight,
-                0, 0, (LONG)window->clientWidth, (LONG)window->clientHeight,
-                window->pixels, &bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
-}
-
 #include"windows/filesystem.c"
 #include"windows/directory.c"
 
@@ -66,12 +50,13 @@ global t_app_input g_app_input;
 global t_window g_window;
 global t_app_state g_app_state;
 
+#include"windows/graphics.c"
 #include"windows/platform.c"
 
 internal void
-win32_draw_app(t_window* window, HDC deviceContext) {
+win32_draw_app(void) {
   app_draw(&g_app_state);
-  paint_window_gdi(window, deviceContext);
+  image_show_gl();
 }
 
 #define get_bit(num, bit) ( ((num) >> (bit)) & 1)
@@ -113,9 +98,12 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
     
     case(WM_PAINT): {
       PAINTSTRUCT paintStruct;
-      HDC paintDC = BeginPaint(g_window.handle, &paintStruct);
-      win32_draw_app(&g_window, paintDC);
+      /*HDC paintDC =*/ BeginPaint(g_window.handle, &paintStruct);
+      //HDC oldDC = g_window.deviceContext;
+      //g_window.deviceContext = paintDC;
+      win32_draw_app();
       EndPaint(g_window.handle, &paintStruct);
+      //g_window.deviceContext = oldDC;
       return(0);
     }
     
@@ -177,7 +165,7 @@ int main(void)
     HINSTANCE instance = GetModuleHandle(0);
     WNDCLASSEXW windowClass = {0};
     windowClass.cbSize = sizeof(WNDCLASSEXW);
-    windowClass.style = CS_HREDRAW | CS_VREDRAW;
+    windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     windowClass.lpfnWndProc = window_proc;
     windowClass.hInstance = instance;
     windowClass.lpszClassName = L"imgvu_window_class";
@@ -190,7 +178,30 @@ int main(void)
     ShowWindow(g_window.handle, SW_SHOWDEFAULT);
   }
   
-  HDC deviceContext = GetDC(g_window.handle);
+  g_window.deviceContext = GetDC(g_window.handle);
+  HGLRC glContext;
+  {
+    PIXELFORMATDESCRIPTOR pixelFormat = {0};
+    pixelFormat.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+    pixelFormat.nVersion = 1;
+    pixelFormat.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pixelFormat.iPixelType = PFD_TYPE_RGBA;
+    pixelFormat.cColorBits = 32;
+    pixelFormat.cDepthBits = 24;
+    pixelFormat.cStencilBits = 8;
+    pixelFormat.cAuxBuffers = 0;
+    pixelFormat.iLayerType = PFD_MAIN_PLANE;
+    
+    int pixelFormatIndex = ChoosePixelFormat(g_window.deviceContext, &pixelFormat);
+    assert(pixelFormatIndex != 0); // TODO(bumbread): correct handling of this case, where pixel format wasn't found
+    bool result = SetPixelFormat(g_window.deviceContext, pixelFormatIndex, &pixelFormat);
+    debug_variable_unused(result);
+    
+    glContext = wglCreateContext(g_window.deviceContext);
+    assert(glContext != 0); // TODO(bumbread): correct handling
+    
+    wglMakeCurrent(g_window.deviceContext, glContext);
+  }
   g_running = true;
   
   r32 dt = 0;
@@ -207,7 +218,7 @@ int main(void)
     bool stop = app_update(&g_app_state, &directoryState, &g_app_input, dt);
     if(stop) break;
     
-    win32_draw_app(&g_window, deviceContext);
+    win32_draw_app();
     
     if(directoryState.changed) {
       directoryState.changed = false;
