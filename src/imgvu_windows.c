@@ -98,12 +98,9 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
     
     case(WM_PAINT): {
       PAINTSTRUCT paintStruct;
-      /*HDC paintDC =*/ BeginPaint(g_window.handle, &paintStruct);
-      //HDC oldDC = g_window.deviceContext;
-      //g_window.deviceContext = paintDC;
+      BeginPaint(g_window.handle, &paintStruct);
       win32_draw_app();
       EndPaint(g_window.handle, &paintStruct);
-      //g_window.deviceContext = oldDC;
       return(0);
     }
     
