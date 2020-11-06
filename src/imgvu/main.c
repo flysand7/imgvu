@@ -16,7 +16,7 @@ internal t_image app_decode_file(t_file_data data) {
 
 internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirState, t_app_input* input, r32 dt) {
   if(!appState->initialized) {
-    app_load_config(&appState->appConfig, platform_get_config_filename());
+    app_load_config(&app_config, platform_get_config_filename());
     
     appState->initialized = true;
     appState->dirState = dirState;
@@ -28,16 +28,16 @@ internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirS
   
   if(input->prevImage && !input->nextImage) {
     platform_directory_previous_file(dirState);
-    appState->appConfig.backgroundColor += 1;
-    if(appState->appConfig.backgroundColor >= appState->appConfig.colorCycle.len) {
-      appState->appConfig.backgroundColor = 0;
+    app_config.backgroundColor += 1;
+    if(app_config.backgroundColor >= app_config.colorCycle.len) {
+      app_config.backgroundColor = 0;
     }
   }
   if(input->nextImage && !input->prevImage) {
     platform_directory_next_file(dirState);
-    appState->appConfig.backgroundColor += 1;
-    if(appState->appConfig.backgroundColor >= appState->appConfig.colorCycle.len) {
-      appState->appConfig.backgroundColor = 0;
+    app_config.backgroundColor += 1;
+    if(app_config.backgroundColor >= app_config.colorCycle.len) {
+      app_config.backgroundColor = 0;
     }
   }
   
@@ -46,8 +46,8 @@ internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirS
 
 internal void app_draw(t_app_state* appState) {
   
-  if(appState->appConfig.colorCycle.ptr)
-    platform_clear_screen(appState->appConfig.colorCycle.ptr[appState->appConfig.backgroundColor]);
+  if(app_config.colorCycle.ptr)
+    platform_clear_screen(app_config.colorCycle.ptr[app_config.backgroundColor]);
   
   if(appState->dirState != 0) {
     t_image* currentImage = platform_get_current_image(appState->dirState);

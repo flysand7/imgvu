@@ -90,7 +90,6 @@ internal t_string16 platform_get_config_filename(void);
 struct {
   bool initialized;
   struct t_directory_state_s* dirState;
-  t_app_config appConfig;
   t_location imageLocation;
 } typedef t_app_state;
 
