@@ -98,6 +98,7 @@ internal t_token_list lex_config_file(t_file_data fileData) {
     u32 index = 0;
     
     state_main: {
+      if(index == fileData.size) goto end;
       state_start(0);
       token_start();
       if(is_letter(c))          {advance_to(state_identifier)}
@@ -396,8 +397,9 @@ internal t_string token_parse_string(t_token* token) {
   
   assert(token->len >= 2);
   t_string string;
-  string.len = 0;
-  string.ptr = malloc((token->len - 2) * sizeof(char));
+  string.len = token->len - 2;
+  string.ptr = malloc((string.len - 1) * sizeof(char));
+  string.ptr[string.len] = 0;
   
   index = 1;
   c += 1;
@@ -562,7 +564,7 @@ internal bool parse_config_file(t_symbol_table* symbols, t_file_data fileData) {
     }
     
     bool assigned = false;
-    if(value->type >= TOKEN_TYPE_IDENTIFIER && value->type <= TOKEN_TYPE_FLOAT) {
+    if(value->type >= TOKEN_TYPE_IDENTIFIER && value->type <= TOKEN_TYPE_STRING) {
       assigned = write_token_value_to_symbol(symbols, target, value);
     }
     else if(value->type == TOKEN_TYPE_ARRAY_OPEN) {
@@ -749,12 +751,12 @@ internal void config_initialize_links(t_symbol_table* symbols, t_link_list* link
 }
 
 internal t_string write_int_to_string(i64 value) {
-  assert(value > 0);
+  assert(value >= 0);
   t_string result = {0};
-  while(value != 0) {
+  do {
     string_append_char(&result, (value % 10) + '0');
     value /= 10;
-  }
+  } while(value != 0);
   string_reverse(&result);
   return(result);
 }
