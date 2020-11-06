@@ -43,12 +43,13 @@ resize_window(t_window* window, u32 newClientWidth, u32 newClientHeight) {
 #include"windows/filesystem.c"
 #include"windows/directory.c"
 
-// TODO(bumbread): get rid of as many globals as possible
-// without making the control flow confusing
+enum {GRAPHICS_GL, GRAPHICS_GDI} typedef t_graphics_provider;
+
 global bool g_running;
 global t_app_input g_app_input;
 global t_window g_window;
 global t_app_state g_app_state;
+global t_graphics_provider g_graphics_provider = GRAPHICS_GL;
 
 #include"windows/graphics.c"
 #include"windows/platform.c"

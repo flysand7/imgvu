@@ -17,6 +17,7 @@ internal t_image app_decode_file(t_file_data data) {
 internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirState, t_app_input* input, r32 dt) {
   if(!appState->initialized) {
     app_load_config(&app_config, platform_get_config_filename());
+    platform_chose_graphics_provider(app_config.graphicsProvider);
     
     appState->initialized = true;
     appState->dirState = dirState;

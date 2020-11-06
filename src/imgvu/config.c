@@ -18,6 +18,7 @@ struct {
   t_array_i colorCycle;
   u32 backgroundColor;
   i64 useInterpolation;
+  t_string graphicsProvider;
 } typedef t_app_config;
 
 global t_app_config app_config;
@@ -30,6 +31,7 @@ internal void config_load_default(t_app_config* appConfig) {
   appConfig->colorCycle.ptr[1] = 0xffffffff;
   appConfig->backgroundColor = 0;
   appConfig->useInterpolation = false;
+  appConfig->graphicsProvider = string_copy_mem(char_count("default"));
 }
 
 enum {
@@ -877,6 +879,7 @@ internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   t_link_list links = {0};
   link_create_ai(&links, char_count("color_cycle"), &appConfig->colorCycle);
   link_create_i(&links, char_count("use_linear_interpolation"), &appConfig->useInterpolation);
+  link_create_s(&links, char_count("graphics_provider"), &appConfig->graphicsProvider);
   config_initialize_links(&symbols, &links);
   config_free_symbols(&symbols);
   

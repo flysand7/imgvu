@@ -47,17 +47,24 @@ internal t_image* platform_get_current_image(t_directory_state* dirState) {
   return(0);
 }
 
-// TODO(bumbread): should make abstract color structure that describes color in a
-// platform independent way.
+internal void platform_chose_graphics_provider(t_string provider) {
+  if(string_compare(provider, char_count("gl"))) {g_graphics_provider = GRAPHICS_GL;}
+  else if(string_compare(provider, char_count("gdi"))) {g_graphics_provider = GRAPHICS_GDI; }
+  else {g_graphics_provider = GRAPHICS_GL;}
+}
+
 internal void platform_clear_screen(u32 color) {
-  //clear_screen_gdi(color);
-  //clear_screen_gl(color);
-  debug_variable_unused(color);
+  switch(g_graphics_provider) {
+    case(GRAPHICS_GDI): clear_screen_gdi(color); break;
+    case(GRAPHICS_GL): clear_screen_gl(color); break;
+  }
 }
 
 internal void platform_draw_image(t_location* loc, t_image* image) {
-  //draw_image_gdi(loc, image);
-  draw_image_gl(loc, image);
+  switch(g_graphics_provider) {
+    case(GRAPHICS_GDI): draw_image_gdi(loc, image); break;
+    case(GRAPHICS_GL): draw_image_gl(loc, image); break;
+  }
 }
 
 internal t_file_data platform_load_file(t_string16 fullFilename) {

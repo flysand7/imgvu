@@ -8,55 +8,57 @@ internal void clear_screen_gdi(u32 color) {
 }
 
 internal void draw_image_gdi(t_location* loc, t_image* image) {
-  i32 maxWidth = (i32)g_window.clientWidth;
-  i32 maxHeight = (i32)g_window.clientHeight;
-  
-  i32 xPosition = (i32)loc->posX;
-  i32 yPosition = (i32)loc->posY;
-  i32 width = (i32)image->width;
-  i32 height = (i32)image->height;
-  
-  if(xPosition >= maxWidth) return;
-  if(yPosition >= maxHeight) return;
-  if(xPosition + maxWidth <= 0) return;
-  if(yPosition + maxHeight <= 0) return;
-  
-  if(xPosition < 0) { 
-    width += xPosition;
-    xPosition = 0;
-  }
-  if(yPosition < 0) {
-    height += yPosition;
-    yPosition = 0;
-  }
-  if(xPosition + width > maxWidth) {
-    i32 over = xPosition + width - maxWidth;
-    assert(over > 0);
-    width -= over;
-  }
-  if(yPosition + height > maxHeight) {
-    i32 over = yPosition + height - maxHeight;
-    assert(over > 0);
-    height -= over;
-  }
-  
-  assert(xPosition >= 0);
-  assert(yPosition >= 0);
-  assert(xPosition + width <= maxWidth);
-  assert(yPosition + height <= maxHeight);
-  
-  u32* targetRow = g_window.pixels + (u32)yPosition*g_window.clientWidth + (u32)xPosition;
-  u32* sourceRow = image->pixels;
-  for(i32 row = 0; row < height; row += 1) {
-    u32* targetPixel = targetRow;
-    u32* sourcePixel = sourceRow;
-    for(i32 column = 0; column < width; column += 1) {
-      *targetPixel = *sourcePixel;
-      targetPixel += 1;
-      sourcePixel += 1;
+  if(loc->scale == 1.0f) {
+    i32 maxWidth = (i32)g_window.clientWidth;
+    i32 maxHeight = (i32)g_window.clientHeight;
+    
+    i32 xPosition = (i32)loc->posX;
+    i32 yPosition = (i32)loc->posY;
+    i32 width = (i32)image->width;
+    i32 height = (i32)image->height;
+    
+    if(xPosition >= maxWidth) return;
+    if(yPosition >= maxHeight) return;
+    if(xPosition + maxWidth <= 0) return;
+    if(yPosition + maxHeight <= 0) return;
+    
+    if(xPosition < 0) { 
+      width += xPosition;
+      xPosition = 0;
     }
-    sourceRow += image->width;
-    targetRow += g_window.clientWidth;
+    if(yPosition < 0) {
+      height += yPosition;
+      yPosition = 0;
+    }
+    if(xPosition + width > maxWidth) {
+      i32 over = xPosition + width - maxWidth;
+      assert(over > 0);
+      width -= over;
+    }
+    if(yPosition + height > maxHeight) {
+      i32 over = yPosition + height - maxHeight;
+      assert(over > 0);
+      height -= over;
+    }
+    
+    assert(xPosition >= 0);
+    assert(yPosition >= 0);
+    assert(xPosition + width <= maxWidth);
+    assert(yPosition + height <= maxHeight);
+    
+    u32* targetRow = g_window.pixels + (u32)yPosition*g_window.clientWidth + (u32)xPosition;
+    u32* sourceRow = image->pixels;
+    for(i32 row = 0; row < height; row += 1) {
+      u32* targetPixel = targetRow;
+      u32* sourcePixel = sourceRow;
+      for(i32 column = 0; column < width; column += 1) {
+        *targetPixel = *sourcePixel;
+        targetPixel += 1;
+        sourcePixel += 1;
+      }
+      sourceRow += image->width;
+      targetRow += g_window.clientWidth;
+    }
   }
 }
 
