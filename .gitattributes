@@ -1,2 +1,3 @@
 *.h linguist-detectable=true
 *.h linguist-language=C
+*.bat linguist-vendored=false
