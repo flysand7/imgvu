@@ -87,16 +87,32 @@ internal void clear_screen_gl(u32 color) {
 
 internal void draw_image_gl(t_location* loc, t_image* image) {
   debug_variable_unused(loc);
-  debug_variable_unused(image);
-  glColor4f(1.0, 1.0, 1.0, 1.0);
+  
+  glEnable(GL_TEXTURE_2D);
+  
+  u32 texture;
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (i32)image->width, (i32)image->height, 
+               0, GL_RGBA, GL_UNSIGNED_BYTE, image->pixels);
+  
+  glViewport(0, 0, (i32)g_window.clientWidth, (i32)g_window.clientHeight);
+  glLoadIdentity();
+  glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+  
+  glBegin(GL_QUADS);
+  glTexCoord2f(0.0, 0.0); glVertex3f(-0.5f, -0.5f, 0.0f);
+  glTexCoord2f(0.0, 1.0); glVertex3f(-0.5f, 0.5f, 0.0f);
+  glTexCoord2f(1.0, 1.0); glVertex3f(0.5f, 0.5f, 0.0f);
+  glTexCoord2f(1.0, 0.0); glVertex3f(0.5f, -0.5f, 0.0f);
+  glEnd();
+  
   glLoadIdentity();
   glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0);
-  glBegin(GL_POLYGON);
-  glVertex3f (0.25, 0.25, 0.0);
-  glVertex3f (0.75, 0.25, 0.0);
-  glVertex3f (0.75, 0.75, 0.0);
-  glVertex3f (0.25, 0.75, 0.0);
-  glEnd();
+  
+  glDeleteTextures(1, &texture);
 }
 
 internal void image_show_gl(void) {
