@@ -85,9 +85,12 @@ internal void clear_screen_gl(u32 color) {
   glClear(GL_COLOR_BUFFER_BIT);
 }
 
+#define PI32 3.1415926535f
+internal inline r32 rad_to_deg(r32 rad) {
+  return(rad/PI32 * 180.0f);
+}
+
 internal void draw_image_gl(t_location* loc, t_image* image) {
-  debug_variable_unused(loc);
-  
   glEnable(GL_TEXTURE_2D);
   
   u32 texture;
@@ -100,7 +103,19 @@ internal void draw_image_gl(t_location* loc, t_image* image) {
   
   glViewport(0, 0, (i32)g_window.clientWidth, (i32)g_window.clientHeight);
   glLoadIdentity();
-  glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+  
+  r64 halfWidth = (r64)g_window.clientWidth / 2.0;
+  r64 halfHeight = (r64)g_window.clientHeight / 2.0;
+  glOrtho(-halfWidth, halfWidth, -halfHeight, halfHeight, -1.0, 1.0);
+  glTranslatef(loc->posX, loc->posY, 0);
+  glRotatef(rad_to_deg(loc->angle), 0,0,1);
+  r32 imageWidth = (r32)image->width;
+  r32 imageHeight = (r32)image->height;
+  if(loc->flippedX) imageWidth = -imageWidth;
+  if(loc->flippedY) imageHeight = -imageHeight;
+  imageWidth *= loc->scale;
+  imageHeight *= loc->scale;
+  glScalef(imageWidth, imageHeight, 1.0f);
   
   glBegin(GL_QUADS);
   glTexCoord2f(0.0, 0.0); glVertex3f(-0.5f, -0.5f, 0.0f);

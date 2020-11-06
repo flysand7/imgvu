@@ -67,7 +67,7 @@ struct {
   bool flippedX;
   bool flippedY;
   // NOTE(bumbread): transformation order
-  // flip -> rotate -> scale -> translate
+  // flip & scale -> rotate -> translate
 } typedef t_location;
 
 struct t_directory_state_s;
