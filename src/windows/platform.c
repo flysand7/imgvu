@@ -1,6 +1,5 @@
 
 struct t_directory_state_s;
-internal void platform_draw_image(t_location* loc, t_image* image);
 
 internal void platform_directory_set(t_directory_state* dirState, t_string16 path) {
   if(!string16_compare(path, dirState->dirPath)) {
@@ -64,6 +63,13 @@ internal void platform_draw_image(t_location* loc, t_image* image) {
   switch(g_graphics_provider) {
     case(GRAPHICS_GDI): draw_image_gdi(loc, image); break;
     case(GRAPHICS_GL): draw_image_gl(loc, image); break;
+  }
+}
+
+internal void platform_show(void) {
+  switch(g_graphics_provider) {
+    case(GRAPHICS_GDI): image_show_gdi(); break;
+    case(GRAPHICS_GL): image_show_gl(); break;
   }
 }
 

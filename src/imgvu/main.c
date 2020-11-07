@@ -47,8 +47,9 @@ internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirS
 
 internal void app_draw(t_app_state* appState) {
   
-  if(app_config.colorCycle.ptr)
+  if(app_config.colorCycle.ptr) {
     platform_clear_screen(app_config.colorCycle.ptr[app_config.backgroundColor]);
+  }
   
   if(appState->dirState != 0) {
     t_image* currentImage = platform_get_current_image(appState->dirState);
@@ -56,4 +57,6 @@ internal void app_draw(t_app_state* appState) {
       platform_draw_image(&appState->imageLocation, currentImage);
     }
   }
+  
+  platform_show();
 }

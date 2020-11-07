@@ -57,7 +57,6 @@ global t_graphics_provider g_graphics_provider = GRAPHICS_GL;
 internal void
 win32_draw_app(void) {
   app_draw(&g_app_state);
-  image_show_gl();
 }
 
 #define get_bit(num, bit) ( ((num) >> (bit)) & 1)
@@ -94,14 +93,7 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
       u32 newClientWidth = LOWORD(lp);
       u32 newClientHeight = HIWORD(lp);
       resize_window(&g_window, newClientWidth, newClientHeight);
-      return(0);
-    }
-    
-    case(WM_PAINT): {
-      PAINTSTRUCT paintStruct;
-      BeginPaint(g_window.handle, &paintStruct);
       win32_draw_app();
-      EndPaint(g_window.handle, &paintStruct);
       return(0);
     }
     
@@ -177,28 +169,29 @@ int main(void)
   }
   
   g_window.deviceContext = GetDC(g_window.handle);
-  HGLRC glContext;
-  {
-    PIXELFORMATDESCRIPTOR pixelFormat = {0};
-    pixelFormat.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-    pixelFormat.nVersion = 1;
-    pixelFormat.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-    pixelFormat.iPixelType = PFD_TYPE_RGBA;
-    pixelFormat.cColorBits = 32;
-    pixelFormat.cDepthBits = 24;
-    pixelFormat.cStencilBits = 8;
-    pixelFormat.cAuxBuffers = 0;
-    pixelFormat.iLayerType = PFD_MAIN_PLANE;
-    
-    int pixelFormatIndex = ChoosePixelFormat(g_window.deviceContext, &pixelFormat);
-    assert(pixelFormatIndex != 0); // TODO(bumbread): correct handling of this case, where pixel format wasn't found
-    bool result = SetPixelFormat(g_window.deviceContext, pixelFormatIndex, &pixelFormat);
-    debug_variable_unused(result);
-    
-    glContext = wglCreateContext(g_window.deviceContext);
-    assert(glContext != 0); // TODO(bumbread): correct handling
-    
-    wglMakeCurrent(g_window.deviceContext, glContext);
+  if(g_graphics_provider == GRAPHICS_GL) {
+    HGLRC glContext;
+    {
+      PIXELFORMATDESCRIPTOR pixelFormat = {0};
+      pixelFormat.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+      pixelFormat.nVersion = 1;
+      pixelFormat.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+      pixelFormat.iPixelType = PFD_TYPE_RGBA;
+      pixelFormat.cColorBits = 32;
+      pixelFormat.cDepthBits = 24;
+      pixelFormat.cStencilBits = 8;
+      pixelFormat.cAuxBuffers = 0;
+      pixelFormat.iLayerType = PFD_MAIN_PLANE;
+      
+      int pixelFormatIndex = ChoosePixelFormat(g_window.deviceContext, &pixelFormat);
+      assert(pixelFormatIndex != 0); // TODO(bumbread): correct handling of this case, where pixel format wasn't found
+      SetPixelFormat(g_window.deviceContext, pixelFormatIndex, &pixelFormat);
+      
+      glContext = wglCreateContext(g_window.deviceContext);
+      assert(glContext != 0); // TODO(bumbread): correct handling
+      
+      wglMakeCurrent(g_window.deviceContext, glContext);
+    }
   }
   g_running = true;
   

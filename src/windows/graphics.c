@@ -73,7 +73,7 @@ internal void image_show_gdi(void) {
   bitmapInfo.bmiHeader.biBitCount = 32;
   bitmapInfo.bmiHeader.biCompression = BI_RGB;
   
-  StretchDIBits(g_window.deviceContext, 
+  StretchDIBits(g_window.deviceContext,
                 0, 0, (LONG)g_window.clientWidth, (LONG)g_window.clientHeight,
                 0, 0, (LONG)g_window.clientWidth, (LONG)g_window.clientHeight,
                 g_window.pixels, &bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
