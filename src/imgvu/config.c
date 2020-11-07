@@ -865,8 +865,6 @@ internal void app_write_config_links_to_file(t_link_list* links, t_string16 file
 }
 
 internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
-  debug_variable_unused(appConfig);
-  
   config_load_default(appConfig);
   
   t_file_data configData = platform_load_file(filename);
