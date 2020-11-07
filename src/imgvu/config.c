@@ -619,6 +619,7 @@ internal void config_free_symbols(t_symbol_table* symbols) {
 struct {
   t_symbol_type type;
   t_string name;
+  bool found;
   union {
     i64* value_i;
     r64* value_f;
@@ -710,12 +711,15 @@ internal void config_initialize_links(t_symbol_table* symbols, t_link_list* link
           switch(link->type) {
             case(TYPE_INTEGER): {
               *link->value_i = symbol->value_i;
+              link->found = true;
             } break;
             case(TYPE_FLOAT): {
               *link->value_f = symbol->value_f;
+              link->found = true;
             } break;
             case(TYPE_STRING): {
               *link->value_s = string_copy_mem(symbol->value_s);
+              link->found = true;
             } break;
             case(TYPE_ARRAY_INTEGER): {
               link->value_ai->len = symbol->value_ai.len;
@@ -724,6 +728,7 @@ internal void config_initialize_links(t_symbol_table* symbols, t_link_list* link
               for(u32 valueIndex = 0; valueIndex < symbol->value_ai.len; valueIndex += 1) {
                 link->value_ai->ptr[valueIndex] = symbol->value_ai.ptr[valueIndex];
               }
+              link->found = true;
             } break;
             case(TYPE_ARRAY_FLOAT): {
               link->value_af->len = symbol->value_af.len;
@@ -732,6 +737,7 @@ internal void config_initialize_links(t_symbol_table* symbols, t_link_list* link
               for(u32 valueIndex = 0; valueIndex < symbol->value_af.len; valueIndex += 1) {
                 link->value_af->ptr[valueIndex] = symbol->value_af.ptr[valueIndex];
               }
+              link->found = true;
             } break;
             case(TYPE_ARRAY_STRING): {
               link->value_as->len = symbol->value_as.len;
@@ -740,6 +746,7 @@ internal void config_initialize_links(t_symbol_table* symbols, t_link_list* link
               for(u32 valueIndex = 0; valueIndex < symbol->value_as.len; valueIndex += 1) {
                 link->value_as->ptr[valueIndex] = string_copy_mem(symbol->value_as.ptr[valueIndex]);
               }
+              link->found = true;
             } break;
           }
         }
@@ -864,10 +871,48 @@ internal void app_write_config_links_to_file(t_link_list* links, t_string16 file
   free(outputBuffer.ptr);
 }
 
+internal void app_append_missing_links(t_link_list* links, t_file_data file) {
+  t_string fileSource;
+  fileSource.ptr = file.ptr;
+  fileSource.len = (u32)file.size;
+  
+  t_string outputBuffer = string_copy_mem(fileSource);
+  
+  t_file_data output = {0};
+  output.filename = file.filename;
+  
+  for(u32 linkIndex = 0; linkIndex < links->count; linkIndex += 1) {
+    t_symbol_link* link = links->v + linkIndex;
+    if(link->found == false) {
+      string_append(&outputBuffer, link->name);
+      string_append(&outputBuffer, char_count("="));
+      
+      t_string value = {0};
+      switch(link->type) {
+        case(TYPE_INTEGER): value = write_int_to_string(*link->value_i); break;
+        case(TYPE_FLOAT): value = write_float_to_string(*link->value_f); break;
+        case(TYPE_STRING): value = write_string_to_string(*link->value_s); break;
+        case(TYPE_ARRAY_INTEGER): value = write_int_array_to_string(*link->value_ai); break;
+        case(TYPE_ARRAY_FLOAT): value = write_float_array_to_string(*link->value_af); break;
+        case(TYPE_ARRAY_STRING): value = write_string_array_to_string(*link->value_as); break;
+      }
+      string_append(&outputBuffer, value);
+      string_append_char(&outputBuffer, ';');
+      string_append_char(&outputBuffer, '\n');
+    }
+  }
+  
+  output.size = (u64)outputBuffer.len;
+  output.ptr = outputBuffer.ptr;
+  platform_write_file(output);
+  free(outputBuffer.ptr);
+}
+
 internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   config_load_default(appConfig);
   
   t_file_data configData = platform_load_file(filename);
+  
   t_symbol_table symbols = {0};
   bool shouldWriteNewConfig = (configData.ptr == 0);
   if(configData.ptr) {
@@ -883,6 +928,9 @@ internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   
   if(shouldWriteNewConfig) {
     app_write_config_links_to_file(&links, filename);
+  }
+  else {
+    app_append_missing_links(&links, configData);
   }
   
   link_free(&links);
