@@ -7,59 +7,88 @@ internal void gdi_clear_screen(u32 color) {
   }
 }
 
+#include<math.h>
 internal void gdi_draw_image(t_location* loc, t_image* image) {
-  if(loc->scale == 1.0f) {
-    i32 maxWidth = (i32)g_window.clientWidth;
-    i32 maxHeight = (i32)g_window.clientHeight;
-    
-    i32 xPosition = (i32)loc->posX;
-    i32 yPosition = (i32)loc->posY;
-    i32 width = (i32)image->width;
-    i32 height = (i32)image->height;
-    
-    if(xPosition >= maxWidth) return;
-    if(yPosition >= maxHeight) return;
-    if(xPosition + maxWidth <= 0) return;
-    if(yPosition + maxHeight <= 0) return;
-    
-    if(xPosition < 0) { 
-      width += xPosition;
-      xPosition = 0;
+  i32 windowWidth = (i32)g_window.clientWidth;
+  i32 windowHeight = (i32)g_window.clientHeight;
+  
+  i32 width = (i32)image->width;
+  i32 height = (i32)image->height;
+  
+#if 0  
+  i32 xPosition = (i32)loc->posX;
+  i32 yPosition = (i32)loc->posY;
+  
+  if(xPosition >= windowWidth) return;
+  if(yPosition >= windowHeight) return;
+  if(xPosition + width <= 0) return;
+  if(yPosition + height <= 0) return;
+  
+  if(xPosition < 0) { 
+    width += xPosition;
+    xPosition = 0;
+  }
+  if(yPosition < 0) {
+    height += yPosition;
+    yPosition = 0;
+  }
+  if(xPosition + width > windowWidth) {
+    i32 over = xPosition + width - windowWidth;
+    assert(over > 0);
+    width -= over;
+  }
+  if(yPosition + height > windowHeight) {
+    i32 over = yPosition + height - windowHeight;
+    assert(over > 0);
+    height -= over;
+  }
+  
+  assert(xPosition >= 0);
+  assert(yPosition >= 0);
+  assert(xPosition + width <= windowWidth);
+  assert(yPosition + height <= windowHeight);
+  
+  u32* targetRow = g_window.pixels + (u32)yPosition*g_window.clientWidth + (u32)xPosition;
+  u32* sourceRow = image->pixels;
+  for(i32 row = 0; row < height; row += 1) {
+    u32* targetPixel = targetRow;
+    u32* sourcePixel = sourceRow;
+    for(i32 column = 0; column < width; column += 1) {
+      *targetPixel = *sourcePixel;
+      targetPixel += 1;
+      sourcePixel += 1;
     }
-    if(yPosition < 0) {
-      height += yPosition;
-      yPosition = 0;
-    }
-    if(xPosition + width > maxWidth) {
-      i32 over = xPosition + width - maxWidth;
-      assert(over > 0);
-      width -= over;
-    }
-    if(yPosition + height > maxHeight) {
-      i32 over = yPosition + height - maxHeight;
-      assert(over > 0);
-      height -= over;
-    }
-    
-    assert(xPosition >= 0);
-    assert(yPosition >= 0);
-    assert(xPosition + width <= maxWidth);
-    assert(yPosition + height <= maxHeight);
-    
-    u32* targetRow = g_window.pixels + (u32)yPosition*g_window.clientWidth + (u32)xPosition;
-    u32* sourceRow = image->pixels;
-    for(i32 row = 0; row < height; row += 1) {
-      u32* targetPixel = targetRow;
-      u32* sourcePixel = sourceRow;
-      for(i32 column = 0; column < width; column += 1) {
-        *targetPixel = *sourcePixel;
-        targetPixel += 1;
-        sourcePixel += 1;
+    sourceRow += image->width;
+    targetRow += g_window.clientWidth;
+  }
+#else
+  
+  // TODO(bumbread): separate out maths stuff into another file
+  for(u32 column = 0; column < (u32)windowWidth; column += 1) {
+    for(u32 row = 0; row < (u32)windowHeight; row += 1) {
+      r32 pixelX = (r32)column;
+      r32 pixelY = (r32)row;
+      r32 imageX = loc->posX + (r32)windowWidth/2.0f;
+      r32 imageY = loc->posY + (r32)windowHeight/2.0f;
+      r32 untransformedX = pixelX - imageX;
+      r32 untransformedY = pixelY - imageY;
+      r32 unrotatedX = untransformedX*cosf(-loc->angle) - untransformedY*sinf(-loc->angle);
+      r32 unrotatedY = untransformedX*sinf(-loc->angle) + untransformedY*cosf(-loc->angle);
+      r32 unscaledX = unrotatedX / loc->scale;
+      r32 unscaledY = unrotatedY / loc->scale;
+      r32 imagePixelX = unscaledX;
+      r32 imagePixelY = unscaledY;
+      if(loc->flippedX) imagePixelX = -imagePixelX;
+      if(loc->flippedY) imagePixelX = -imagePixelX;
+      i32 intPixelX = (i32)imagePixelX;
+      i32 intPixelY = (i32)imagePixelY;
+      if(intPixelX >= 0 && intPixelY >= 0 && intPixelX < width && intPixelY < height) {
+        g_window.pixels[column + row*g_window.clientWidth] = image->pixels[intPixelX + intPixelY * width];
       }
-      sourceRow += image->width;
-      targetRow += g_window.clientWidth;
     }
   }
+  
+#endif
 }
 
 internal void gdi_show(void) {
