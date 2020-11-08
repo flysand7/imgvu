@@ -80,8 +80,8 @@ internal void gdi_draw_image(t_location* loc, t_image* image) {
       r32 imagePixelY = unscaledY;
       if(loc->flippedX) imagePixelX = -imagePixelX;
       if(loc->flippedY) imagePixelX = -imagePixelX;
-      i32 intPixelX = (i32)imagePixelX;
-      i32 intPixelY = (i32)imagePixelY;
+      i32 intPixelX = (i32)(imagePixelX + (r32)width/2.0f);
+      i32 intPixelY = (i32)(imagePixelY + (r32)width/2.0f);
       if(intPixelX >= 0 && intPixelY >= 0 && intPixelX < width && intPixelY < height) {
         g_window.pixels[column + row*g_window.clientWidth] = image->pixels[intPixelX + intPixelY * width];
       }
