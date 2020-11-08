@@ -54,11 +54,6 @@ global t_graphics_provider g_graphics_provider = GRAPHICS_GL;
 #include"windows/graphics.c"
 #include"windows/platform.c"
 
-internal void
-win32_draw_app(void) {
-  app_draw(&g_app_state);
-}
-
 #define get_bit(num, bit) ( ((num) >> (bit)) & 1)
 internal LRESULT CALLBACK 
 window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
@@ -93,7 +88,7 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
       u32 newClientWidth = LOWORD(lp);
       u32 newClientHeight = HIWORD(lp);
       resize_window(&g_window, newClientWidth, newClientHeight);
-      win32_draw_app();
+      app_draw(&g_app_state);
       return(0);
     }
     
@@ -209,7 +204,7 @@ int main(void)
     bool stop = app_update(&g_app_state, &directoryState, &g_app_input, dt);
     if(stop) break;
     
-    win32_draw_app();
+    app_draw(&g_app_state);
     
     if(directoryState.changed) {
       directoryState.changed = false;

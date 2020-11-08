@@ -1,5 +1,5 @@
 
-internal void clear_screen_gdi(u32 color) {
+internal void gdi_clear_screen(u32 color) {
   for(u32 row = 0; row < g_window.clientHeight; row += 1) {
     for(u32 column = 0; column < g_window.clientWidth; column += 1) {
       g_window.pixels[row*g_window.clientWidth + column] = color;
@@ -7,7 +7,7 @@ internal void clear_screen_gdi(u32 color) {
   }
 }
 
-internal void draw_image_gdi(t_location* loc, t_image* image) {
+internal void gdi_draw_image(t_location* loc, t_image* image) {
   if(loc->scale == 1.0f) {
     i32 maxWidth = (i32)g_window.clientWidth;
     i32 maxHeight = (i32)g_window.clientHeight;
@@ -62,7 +62,7 @@ internal void draw_image_gdi(t_location* loc, t_image* image) {
   }
 }
 
-internal void image_show_gdi(void) {
+internal void gdi_show(void) {
   assert(g_window.pixels);
   
   BITMAPINFO bitmapInfo = {0};
@@ -79,7 +79,7 @@ internal void image_show_gdi(void) {
                 g_window.pixels, &bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
 }
 
-internal void clear_screen_gl(u32 color) {
+internal void gl_clear_screen(u32 color) {
   u32 r = (color >> 0)  & 0xff;
   u32 g = (color >> 8)  & 0xff;
   u32 b = (color >> 16) & 0xff;
@@ -92,7 +92,7 @@ internal inline r32 rad_to_deg(r32 rad) {
   return(rad/PI32 * 180.0f);
 }
 
-internal void draw_image_gl(t_location* loc, t_image* image) {
+internal void gl_draw_image(t_location* loc, t_image* image) {
   glEnable(GL_TEXTURE_2D);
   
   u32 texture;
@@ -138,7 +138,7 @@ internal void draw_image_gl(t_location* loc, t_image* image) {
   glDeleteTextures(1, &texture);
 }
 
-internal void image_show_gl(void) {
+internal void gl_show(void) {
   glFlush();
   SwapBuffers(g_window.deviceContext);
 }

@@ -54,22 +54,22 @@ internal void platform_chose_graphics_provider(t_string provider) {
 
 internal void platform_clear_screen(u32 color) {
   switch(g_graphics_provider) {
-    case(GRAPHICS_GDI): clear_screen_gdi(color); break;
-    case(GRAPHICS_GL): clear_screen_gl(color); break;
+    case(GRAPHICS_GDI): gdi_clear_screen(color); break;
+    case(GRAPHICS_GL): gl_clear_screen(color); break;
   }
 }
 
 internal void platform_draw_image(t_location* loc, t_image* image) {
   switch(g_graphics_provider) {
-    case(GRAPHICS_GDI): draw_image_gdi(loc, image); break;
-    case(GRAPHICS_GL): draw_image_gl(loc, image); break;
+    case(GRAPHICS_GDI): gdi_draw_image(loc, image); break;
+    case(GRAPHICS_GL): gl_draw_image(loc, image); break;
   }
 }
 
 internal void platform_show(void) {
   switch(g_graphics_provider) {
-    case(GRAPHICS_GDI): image_show_gdi(); break;
-    case(GRAPHICS_GL): image_show_gl(); break;
+    case(GRAPHICS_GDI): gdi_show(); break;
+    case(GRAPHICS_GL): gl_show(); break;
   }
 }
 
