@@ -88,6 +88,7 @@ internal t_string16 platform_get_config_filename(void);
 // NOTE(bumbread): The services the app provides to the platform layer.
 
 #include"config.c"
+#include"math.c"
 
 struct {
   bool initialized;

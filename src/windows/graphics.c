@@ -7,7 +7,6 @@ internal void gdi_clear_screen(u32 color) {
   }
 }
 
-#include<math.h>
 internal void gdi_draw_image(t_location* loc, t_image* image) {
   i32 windowWidth = (i32)g_window.clientWidth;
   i32 windowHeight = (i32)g_window.clientHeight;
@@ -63,25 +62,20 @@ internal void gdi_draw_image(t_location* loc, t_image* image) {
   }
 #else
   
-  // TODO(bumbread): separate out maths stuff into another file
   for(u32 column = 0; column < (u32)windowWidth; column += 1) {
     for(u32 row = 0; row < (u32)windowHeight; row += 1) {
-      r32 pixelX = (r32)column;
-      r32 pixelY = (r32)row;
-      r32 imageX = loc->posX + (r32)windowWidth/2.0f;
-      r32 imageY = loc->posY + (r32)windowHeight/2.0f;
-      r32 untransformedX = pixelX - imageX;
-      r32 untransformedY = pixelY - imageY;
-      r32 unrotatedX = untransformedX*cosf(-loc->angle) - untransformedY*sinf(-loc->angle);
-      r32 unrotatedY = untransformedX*sinf(-loc->angle) + untransformedY*cosf(-loc->angle);
-      r32 unscaledX = unrotatedX / loc->scale;
-      r32 unscaledY = unrotatedY / loc->scale;
-      r32 imagePixelX = unscaledX;
-      r32 imagePixelY = unscaledY;
-      if(loc->flippedX) imagePixelX = -imagePixelX;
-      if(loc->flippedY) imagePixelX = -imagePixelX;
-      i32 intPixelX = (i32)(imagePixelX + (r32)width/2.0f);
-      i32 intPixelY = (i32)(imagePixelY + (r32)width/2.0f);
+      v2 screenPixel = { (r32)column, (r32)row };
+      v2 imagePosition = { loc->posX + (r32)windowWidth/2.0f, loc->posY + (r32)windowHeight/2.0f };
+      
+      v2 reversePosition;
+      reversePosition = v2_sub(screenPixel, imagePosition);
+      reversePosition = v2_rotate(reversePosition, -loc->angle);
+      reversePosition = v2_mul(reversePosition, 1.0f / loc->scale);
+      if(loc->flippedX) reversePosition.x = -reversePosition.x;
+      if(loc->flippedY) reversePosition.y = -reversePosition.y;
+      
+      i32 intPixelX = (i32)(reversePosition.x + (r32)width/2.0f);
+      i32 intPixelY = (i32)(reversePosition.y + (r32)height/2.0f);
       if(intPixelX >= 0 && intPixelY >= 0 && intPixelX < width && intPixelY < height) {
         g_window.pixels[column + row*g_window.clientWidth] = image->pixels[intPixelX + intPixelY * width];
       }
@@ -116,25 +110,14 @@ internal void gl_clear_screen(u32 color) {
   glClear(GL_COLOR_BUFFER_BIT);
 }
 
-#define PI32 3.1415926535f
-internal inline r32 rad_to_deg(r32 rad) {
-  return(rad/PI32 * 180.0f);
-}
-
 internal void gl_draw_image(t_location* loc, t_image* image) {
   glEnable(GL_TEXTURE_2D);
   
   u32 texture;
   glGenTextures(1, &texture);
   glBindTexture(GL_TEXTURE_2D, texture);
-  if(app_config.useInterpolation) {
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  }
-  else {
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  }
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (i32)image->width, (i32)image->height, 
                0, GL_RGBA, GL_UNSIGNED_BYTE, image->pixels);
   
