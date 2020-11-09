@@ -208,11 +208,16 @@ int main(void)
     
     if(directoryState.changed) {
       directoryState.changed = false;
-      t_string16 currentFilename = directoryState.files[directoryState.currentFile].data.filename;
-      if(currentFilename.ptr != 0) {
-        SetWindowTextW(g_window.handle, (LPCWSTR)currentFilename.ptr);
+      bool fileExists = false;
+      
+      if(directoryState.fileCount != 0) {
+        t_string16 currentFilename = directoryState.files[directoryState.currentFile].data.filename;
+        if(currentFilename.ptr != 0) {
+          SetWindowTextW(g_window.handle, (LPCWSTR)currentFilename.ptr);
+          fileExists = true;
+        }
       }
-      else {
+      if(!fileExists) {
         static_make_string16(prefix, L"[no file found]");
         SetWindowTextW(g_window.handle, (LPCWSTR)prefix.ptr);
       }

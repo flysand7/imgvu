@@ -39,9 +39,11 @@ internal void platform_directory_previous_file(t_directory_state* dirState) {
 }
 
 internal t_image* platform_get_current_image(t_directory_state* dirState) {
-  t_file* file = (dirState->files + dirState->currentFile);
-  if(file->image.pixels != 0) {
-    return(&file->image);
+  if(dirState->fileCount != 0) {
+    t_file* file = (dirState->files + dirState->currentFile);
+    if(file->image.pixels != 0) {
+      return(&file->image);
+    }
   }
   return(0);
 }
