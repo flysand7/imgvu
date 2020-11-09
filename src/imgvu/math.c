@@ -2,6 +2,14 @@
 
 #include<math.h>
 
+internal inline i32 floor32(r32 a) {
+  return((i32)(floorf(a)));
+}
+
+internal inline i32 ceil32(r32 a) {
+  return((i32)(ceilf(a)));
+}
+
 internal inline r32 sin32(r32 angle) {
   return(sinf(angle));
 }
@@ -50,7 +58,6 @@ internal inline v2 v2_mul(v2 a, r32 b) {
   result.y = a.y * b;
   return(result);
 }
-
 
 internal inline v2 v2_div(v2 a, r32 b) {
   assert(b != 0.0f);

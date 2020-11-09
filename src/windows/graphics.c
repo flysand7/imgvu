@@ -7,6 +7,18 @@ internal void gdi_clear_screen(u32 color) {
   }
 }
 
+internal v2 gdi_transform(t_location* loc, v2 halfImageSize, v2 halfWindowSize, v2 pos) {
+  v2 result = pos;
+  if(loc->flippedX) result.x = -result.x;
+  if(loc->flippedY) result.y = -result.y;
+  result = v2_sub(result, halfImageSize);
+  result = v2_mul(result, loc->scale);
+  result = v2_rotate(result, loc->angle);
+  result = v2_add(result, loc->position);
+  result = v2_add(result, halfWindowSize);
+  return(result);
+}
+
 internal void gdi_draw_image(t_location* loc, t_image* image) {
   i32 windowWidth = (i32)g_window.clientWidth;
   i32 windowHeight = (i32)g_window.clientHeight;
@@ -18,8 +30,43 @@ internal void gdi_draw_image(t_location* loc, t_image* image) {
   v2 halfImageSize = {(r32)image->width/2.0f, (r32)image->height/2.0f};
   v2 imagePosition = v2_add(loc->position, halfWindowSize);
   
-  for(u32 column = 0; column < (u32)windowWidth; column += 1) {
-    for(u32 row = 0; row < (u32)windowHeight; row += 1) {
+  v2 angles[] = {
+    {0.0f, 0.0f},
+    {(r32)width, 0.0f},
+    {0.0f, (r32)height},
+    {(r32)width, (r32)height}
+  };
+  
+  angles[0] = gdi_transform(loc, halfImageSize, halfWindowSize, angles[0]);
+  angles[1] = gdi_transform(loc, halfImageSize, halfWindowSize, angles[1]);
+  angles[2] = gdi_transform(loc, halfImageSize, halfWindowSize, angles[2]);
+  angles[3] = gdi_transform(loc, halfImageSize, halfWindowSize, angles[3]);
+  
+  r32 minX = angles[0].x;
+  r32 maxX = angles[0].x;
+  r32 minY = angles[0].y;
+  r32 maxY = angles[0].y;
+  
+  for(u32 i = 1; i < array_length(angles); i += 1) {
+    v2 item = angles[i];
+    if(item.x < minX) minX = item.x;
+    if(item.y < minY) minY = item.y;
+    if(item.x > maxX) maxX = item.x;
+    if(item.y > maxY) maxY = item.y;
+  }
+  
+  if(maxX <= 0.0f) return;
+  if(maxY <= 0.0f) return;
+  if(minX > (r32)windowWidth) return;
+  if(minY > (r32)windowHeight) return;
+  
+  if(minX < 0.0f) minX = 0.0f;
+  if(minY < 0.0f) minY = 0.0f;
+  if(maxX > (r32)windowWidth) maxX = (r32)windowWidth;
+  if(maxY > (r32)windowHeight) maxY = (r32)windowHeight;
+  
+  for(u32 row = (u32)floor32(minY); row < (u32)ceil32(maxY); row += 1) {
+    for(u32 column = (u32)floor32(minX); column < (u32)ceil32(maxX); column += 1) {
       v2 screenPixel = { (r32)column, (r32)row };
       
       v2 reversePosition;
