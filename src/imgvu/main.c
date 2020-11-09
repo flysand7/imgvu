@@ -21,7 +21,8 @@ internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirS
     appState->initialized = true;
     appState->dirState = dirState;
     
-    appState->imageLocation.scale = 1.0f;
+    appState->imageLocation.angle = PI32/4.0f;
+    appState->imageLocation.scale = 4.0f;
   }
   
   debug_variable_unused(dt);

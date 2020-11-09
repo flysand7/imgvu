@@ -9,9 +9,9 @@ internal void gdi_clear_screen(u32 color) {
 
 internal v2 gdi_transform(t_location* loc, v2 halfImageSize, v2 halfWindowSize, v2 pos) {
   v2 result = pos;
+  result = v2_sub(result, halfImageSize);
   if(loc->flippedX) result.x = -result.x;
   if(loc->flippedY) result.y = -result.y;
-  result = v2_sub(result, halfImageSize);
   result = v2_mul(result, loc->scale);
   result = v2_rotate(result, loc->angle);
   result = v2_add(result, loc->position);
