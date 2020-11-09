@@ -64,21 +64,42 @@ internal void gdi_draw_image(t_location* loc, t_image* image) {
   if(maxX > (r32)windowWidth) maxX = (r32)windowWidth;
   if(maxY > (r32)windowHeight) maxY = (r32)windowHeight;
   
-  for(u32 row = (u32)floor32(minY); row < (u32)ceil32(maxY); row += 1) {
-    for(u32 column = (u32)floor32(minX); column < (u32)ceil32(maxX); column += 1) {
-      v2 screenPixel = { (r32)column, (r32)row };
+  u32 rowMin = (u32)floor32(minY);
+  u32 rowMax = (u32)ceil32(maxY);
+  u32 columnMin = (u32)floor32(minX);
+  u32 columnMax = (u32)ceil32(maxX);
+  
+  r32 r_cos = cos32(-loc->angle);
+  r32 r_sin = sin32(-loc->angle);
+  r32 r_scl = 1.0f / loc->scale;
+  r32 r_sclx = r_scl;
+  r32 r_scly = r_scl;
+  if(loc->flippedX) r_sclx = -r_sclx;
+  if(loc->flippedY) r_scly = -r_scly;
+  
+  for(u32 row = rowMin; row < rowMax; row += 1) {
+    for(u32 column = columnMin; column < columnMax; column += 1) {
+      v2 reversePosition = { (r32)column, (r32)row };
       
-      v2 reversePosition;
-      reversePosition = v2_sub(screenPixel, halfWindowSize);
-      reversePosition = v2_sub(reversePosition, loc->position);
-      reversePosition = v2_rotate(reversePosition, -loc->angle);
-      reversePosition = v2_mul(reversePosition, 1.0f / loc->scale);
-      if(loc->flippedX) reversePosition.x = -reversePosition.x;
-      if(loc->flippedY) reversePosition.y = -reversePosition.y;
-      v2 pixelPos = v2_add(reversePosition, halfImageSize);
+      reversePosition.x -= halfWindowSize.x;
+      reversePosition.y -= halfWindowSize.y;
       
-      i32 intPixelX = (i32)pixelPos.x;
-      i32 intPixelY = (i32)pixelPos.y;
+      reversePosition.x -= loc->position.x;
+      reversePosition.y -= loc->position.y;
+      
+      r32 rx = reversePosition.x;
+      r32 ry = reversePosition.y;
+      reversePosition.x = rx*r_cos - ry*r_sin;
+      reversePosition.y = rx*r_sin + ry*r_cos;
+      
+      reversePosition.x *= r_sclx;
+      reversePosition.y *= r_scly;
+      
+      reversePosition.x += halfImageSize.x;
+      reversePosition.y += halfImageSize.y;
+      
+      i32 intPixelX = (i32)reversePosition.x;
+      i32 intPixelY = (i32)reversePosition.y;
       if(intPixelX >= 0 && intPixelY >= 0 && intPixelX < width && intPixelY < height) {
         g_window.pixels[column + row*g_window.clientWidth] = image->pixels[intPixelX + intPixelY * width];
       }
