@@ -38,6 +38,7 @@ wchar_t typedef char16;
 #define array_length(a) (sizeof(a) / sizeof((a)[0]))
 
 #include"string.c"
+#include"math.c"
 
 struct {
   bool prevImage;
@@ -60,8 +61,7 @@ struct {
 } typedef t_image;
 
 struct {
-  r32 posX;
-  r32 posY;
+  v2 position;
   r32 scale;
   r32 angle; // in radians!
   bool flippedX;
@@ -88,7 +88,6 @@ internal t_string16 platform_get_config_filename(void);
 // NOTE(bumbread): The services the app provides to the platform layer.
 
 #include"config.c"
-#include"math.c"
 
 struct {
   bool initialized;

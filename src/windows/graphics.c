@@ -14,58 +14,13 @@ internal void gdi_draw_image(t_location* loc, t_image* image) {
   i32 width = (i32)image->width;
   i32 height = (i32)image->height;
   
-#if 0  
-  i32 xPosition = (i32)loc->posX;
-  i32 yPosition = (i32)loc->posY;
-  
-  if(xPosition >= windowWidth) return;
-  if(yPosition >= windowHeight) return;
-  if(xPosition + width <= 0) return;
-  if(yPosition + height <= 0) return;
-  
-  if(xPosition < 0) { 
-    width += xPosition;
-    xPosition = 0;
-  }
-  if(yPosition < 0) {
-    height += yPosition;
-    yPosition = 0;
-  }
-  if(xPosition + width > windowWidth) {
-    i32 over = xPosition + width - windowWidth;
-    assert(over > 0);
-    width -= over;
-  }
-  if(yPosition + height > windowHeight) {
-    i32 over = yPosition + height - windowHeight;
-    assert(over > 0);
-    height -= over;
-  }
-  
-  assert(xPosition >= 0);
-  assert(yPosition >= 0);
-  assert(xPosition + width <= windowWidth);
-  assert(yPosition + height <= windowHeight);
-  
-  u32* targetRow = g_window.pixels + (u32)yPosition*g_window.clientWidth + (u32)xPosition;
-  u32* sourceRow = image->pixels;
-  for(i32 row = 0; row < height; row += 1) {
-    u32* targetPixel = targetRow;
-    u32* sourcePixel = sourceRow;
-    for(i32 column = 0; column < width; column += 1) {
-      *targetPixel = *sourcePixel;
-      targetPixel += 1;
-      sourcePixel += 1;
-    }
-    sourceRow += image->width;
-    targetRow += g_window.clientWidth;
-  }
-#else
+  v2 halfWindowSize = {(r32)windowWidth/2.0f, (r32)windowHeight/2.0f};
+  v2 halfImageSize = {(r32)image->width/2.0f, (r32)image->height/2.0f};
+  v2 imagePosition = v2_add(loc->position, halfWindowSize);
   
   for(u32 column = 0; column < (u32)windowWidth; column += 1) {
     for(u32 row = 0; row < (u32)windowHeight; row += 1) {
       v2 screenPixel = { (r32)column, (r32)row };
-      v2 imagePosition = { loc->posX + (r32)windowWidth/2.0f, loc->posY + (r32)windowHeight/2.0f };
       
       v2 reversePosition;
       reversePosition = v2_sub(screenPixel, imagePosition);
@@ -73,16 +28,15 @@ internal void gdi_draw_image(t_location* loc, t_image* image) {
       reversePosition = v2_mul(reversePosition, 1.0f / loc->scale);
       if(loc->flippedX) reversePosition.x = -reversePosition.x;
       if(loc->flippedY) reversePosition.y = -reversePosition.y;
+      v2 pixelPos = v2_add(reversePosition, halfImageSize);
       
-      i32 intPixelX = (i32)(reversePosition.x + (r32)width/2.0f);
-      i32 intPixelY = (i32)(reversePosition.y + (r32)height/2.0f);
+      i32 intPixelX = (i32)pixelPos.x;
+      i32 intPixelY = (i32)pixelPos.y;
       if(intPixelX >= 0 && intPixelY >= 0 && intPixelX < width && intPixelY < height) {
         g_window.pixels[column + row*g_window.clientWidth] = image->pixels[intPixelX + intPixelY * width];
       }
     }
   }
-  
-#endif
 }
 
 internal void gdi_show(void) {
@@ -127,7 +81,7 @@ internal void gl_draw_image(t_location* loc, t_image* image) {
   r64 halfWidth = (r64)g_window.clientWidth / 2.0;
   r64 halfHeight = (r64)g_window.clientHeight / 2.0;
   glOrtho(-halfWidth, halfWidth, -halfHeight, halfHeight, -1.0, 1.0);
-  glTranslatef(loc->posX, loc->posY, 0);
+  glTranslatef(loc->position.x, loc->position.y, 0);
   glRotatef(rad_to_deg(loc->angle), 0,0,1);
   r32 imageWidth = (r32)image->width;
   r32 imageHeight = (r32)image->height;
