@@ -25,6 +25,7 @@ internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirS
     appState->imageLocation.scale = 4.0f;
   }
   
+  appState->imageLocation.angle += 0.007f;
   debug_variable_unused(dt);
   
   if(input->prevImage && !input->nextImage) {

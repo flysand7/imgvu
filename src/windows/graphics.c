@@ -28,13 +28,12 @@ internal void gdi_draw_image(t_location* loc, t_image* image) {
   
   v2 halfWindowSize = {(r32)windowWidth/2.0f, (r32)windowHeight/2.0f};
   v2 halfImageSize = {(r32)image->width/2.0f, (r32)image->height/2.0f};
-  v2 imagePosition = v2_add(loc->position, halfWindowSize);
   
   v2 angles[] = {
-    {0.0f, 0.0f},
-    {(r32)width, 0.0f},
-    {0.0f, (r32)height},
-    {(r32)width, (r32)height}
+    {-1.0f, -1.0f},
+    {(r32)(width + 1), -1.0f},
+    {-1.0f, (r32)(height + 1)},
+    {(r32)(width + 1), (r32)(height + 1)}
   };
   
   angles[0] = gdi_transform(loc, halfImageSize, halfWindowSize, angles[0]);
@@ -70,7 +69,8 @@ internal void gdi_draw_image(t_location* loc, t_image* image) {
       v2 screenPixel = { (r32)column, (r32)row };
       
       v2 reversePosition;
-      reversePosition = v2_sub(screenPixel, imagePosition);
+      reversePosition = v2_sub(screenPixel, halfWindowSize);
+      reversePosition = v2_sub(reversePosition, loc->position);
       reversePosition = v2_rotate(reversePosition, -loc->angle);
       reversePosition = v2_mul(reversePosition, 1.0f / loc->scale);
       if(loc->flippedX) reversePosition.x = -reversePosition.x;
