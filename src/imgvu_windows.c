@@ -40,6 +40,7 @@ resize_window(t_window* window, u32 newClientWidth, u32 newClientHeight) {
   }
 }
 
+#include"windows/profiler.c"
 #include"windows/filesystem.c"
 #include"windows/directory.c"
 
@@ -130,6 +131,8 @@ internal t_string16 win32_get_full_path_from_args(void) {
 // TODO(bumbread): and also add fullscreen support, yeah!
 int main(void)
 {
+  clock_setup();
+  
   t_string16 fileToOpen = win32_get_full_path_from_args();
   
   // TODO(bumbread): remove if not needed

@@ -55,6 +55,7 @@ internal void platform_chose_graphics_provider(t_string provider) {
 }
 
 internal void platform_initialize_graphics_provider(void) {
+  profile_block_start(gl_init);
   if(g_graphics_provider == GRAPHICS_GL) {
     HGLRC glContext;
     
@@ -79,6 +80,7 @@ internal void platform_initialize_graphics_provider(void) {
     wglMakeCurrent(g_window.deviceContext, glContext);
     
   }
+  profile_block_end(gl_init);
 }
 
 internal void platform_clear_screen(u32 color) {
