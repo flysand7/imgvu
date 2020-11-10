@@ -36,5 +36,5 @@ u64 cycles_##name##_end = clock_cycles();\
 t_clock clock_##name##_end = clock_seconds();\
 u64 cycles_##name = cycles_##name##_end - cycles_##name##_start;\
 r64 seconds_##name = clock_diff(clock_##name##_start, clock_##name##_end);\
-printf( "\n" #name " cycles:\t%lld cyc.\n", (i64)(cycles_##name));\
+printf( #name " cycles:\t%lld cyc.\n", (i64)(cycles_##name));\
 printf( #name " time:  \t%f sec.\n", seconds_##name)

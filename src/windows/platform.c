@@ -81,6 +81,7 @@ internal void platform_initialize_graphics_provider(void) {
     
   }
   profile_block_end(gl_init);
+  printf("\n");
 }
 
 internal void platform_clear_screen(u32 color) {
