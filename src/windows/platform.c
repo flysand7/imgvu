@@ -54,6 +54,33 @@ internal void platform_chose_graphics_provider(t_string provider) {
   else {g_graphics_provider = GRAPHICS_GL;}
 }
 
+internal void platform_initialize_graphics_provider(void) {
+  if(g_graphics_provider == GRAPHICS_GL) {
+    HGLRC glContext;
+    
+    PIXELFORMATDESCRIPTOR pixelFormat = {0};
+    pixelFormat.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+    pixelFormat.nVersion = 1;
+    pixelFormat.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pixelFormat.iPixelType = PFD_TYPE_RGBA;
+    pixelFormat.cColorBits = 32;
+    pixelFormat.cDepthBits = 24;
+    pixelFormat.cStencilBits = 8;
+    pixelFormat.cAuxBuffers = 0;
+    pixelFormat.iLayerType = PFD_MAIN_PLANE;
+    
+    int pixelFormatIndex = ChoosePixelFormat(g_window.deviceContext, &pixelFormat);
+    assert(pixelFormatIndex != 0); // TODO(bumbread): correct handling of this case, where pixel format wasn't found
+    SetPixelFormat(g_window.deviceContext, pixelFormatIndex, &pixelFormat);
+    
+    glContext = wglCreateContext(g_window.deviceContext);
+    assert(glContext != 0); // TODO(bumbread): correct handling
+    
+    wglMakeCurrent(g_window.deviceContext, glContext);
+    
+  }
+}
+
 internal void platform_clear_screen(u32 color) {
   switch(g_graphics_provider) {
     case(GRAPHICS_GDI): gdi_clear_screen(color); break;

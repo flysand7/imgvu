@@ -17,6 +17,7 @@ internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirS
   if(!appState->initialized) {
     app_load_config(&app_config, platform_get_config_filename());
     platform_chose_graphics_provider(app_config.graphicsProvider);
+    platform_initialize_graphics_provider();
     
     appState->initialized = true;
     appState->dirState = dirState;
