@@ -109,10 +109,18 @@ internal t_token_list lex_config_file(t_file_data fileData) {
       else if(c=='"')           {advance_to(state_string)}
       else if(c=='=')           {advance_to(state_assigment)}
       else if(c=='-')           {advance_to(state_dec_integer)}
+      else if(c=='#')           {advance_to(state_line_comment)}
       else if(is_dec_digit(c))  {advance_to(state_dec_integer)}
       else if(is_whitespace(c)) {advance_to(state_main)}
       else if(c==0)             goto end;
       else                      goto error;
+    }
+    
+    state_line_comment: {
+      state_start(0);
+      if(c == '\n')             goto state_main;
+      else if(c == 0)           goto state_main;
+      else                      {advance_to(state_line_comment)}
     }
     
     state_identifier: {
