@@ -86,8 +86,6 @@ internal t_file_data platform_load_file(t_string16 fullFilename);
 internal bool platform_write_file(t_file_data file);
 internal t_string16 platform_get_config_filename(void);
 
-// NOTE(bumbread): The services the app provides to the platform layer.
-
 #include"config.c"
 
 struct {
@@ -95,6 +93,8 @@ struct {
   struct t_directory_state_s* dirState;
   t_location imageLocation;
 } typedef t_app_state;
+
+// NOTE(bumbread): The services the app provides to the platform layer.
 
 internal bool app_update(t_app_state* appState, struct t_directory_state_s* state, t_app_input* input, r32 dt);
 internal void app_draw(t_app_state* state);
