@@ -19,7 +19,7 @@ internal t_clock clock_seconds(void) {
   return(result);
 }
 
-internal r64 clock_diff(t_clock start, t_clock end) {
+internal r64 clock_diff(t_clock end, t_clock start) {
   assert(end.QuadPart > start.QuadPart);
   u64 difference = (u64)(end.QuadPart - start.QuadPart);
   r64 seconds = (r64)difference / (r64)clockFrequency;
@@ -35,6 +35,6 @@ t_clock clock_##name##_start = clock_seconds()
 u64 cycles_##name##_end = clock_cycles();\
 t_clock clock_##name##_end = clock_seconds();\
 u64 cycles_##name = cycles_##name##_end - cycles_##name##_start;\
-r64 seconds_##name = clock_diff(clock_##name##_start, clock_##name##_end);\
+r64 seconds_##name = clock_diff(clock_##name##_end, clock_##name##_start);\
 printf( #name " cycles:\t%lld cyc.\n", (i64)(cycles_##name));\
 printf( #name " time:  \t%f sec.\n", seconds_##name)
