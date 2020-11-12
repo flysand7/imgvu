@@ -50,7 +50,8 @@ internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirS
 internal void app_draw(t_app_state* appState) {
   
   if(app_config.colorCycle.ptr) {
-    platform_clear_screen(app_config.colorCycle.ptr[app_config.backgroundColor]);
+    u32 color = (u32)app_config.colorCycle.ptr[app_config.backgroundColor];
+    platform_clear_screen(color);
   }
   
   if(appState->dirState != 0) {

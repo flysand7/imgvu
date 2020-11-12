@@ -1,6 +1,6 @@
 struct {
   u32 len;
-  u32* ptr;
+  i64* ptr;
 } typedef t_array_i;
 
 struct {
@@ -108,6 +108,7 @@ internal t_token_list lex_config_file(t_file_data fileData) {
       else if(c=='}')           {advance_to(state_array_end)}
       else if(c=='"')           {advance_to(state_string)}
       else if(c=='=')           {advance_to(state_assigment)}
+      else if(c=='-')           {advance_to(state_dec_integer)}
       else if(is_dec_digit(c))  {advance_to(state_dec_integer)}
       else if(is_whitespace(c)) {advance_to(state_main)}
       else if(c==0)             goto end;
@@ -335,10 +336,16 @@ internal void symbol_copy_value(t_symbol* dest, t_symbol* source) {
   else assert(0);
 }
 
-// TODO(bumbread): negative integers
 internal i64 token_parse_integer(t_token* token) {
   char* c = token->start;
   u32 index = 0;
+  
+  i64 sign = 1;
+  if(*c == '-') {
+    sign = -1;
+    c += 1;
+    index += 1;
+  }
   
   u32 base = 10;
   if(token->len > 1) {
@@ -355,13 +362,19 @@ internal i64 token_parse_integer(t_token* token) {
     c += 1;
   }
   
-  return(result);
+  return(sign*result);
 }
 
-// TODO(bumbread): negative floating point numbers
 internal r64 token_parse_float(t_token* token) {
   char* c = token->start;
   u32 index = 0;
+  
+  r64 sign = 1.0;
+  if(*c == '-') {
+    sign = -1.0;
+    c += 1;
+    index += 1;
+  }
   
   r64 result = 0;
   while(index < token->len) {
@@ -387,7 +400,7 @@ internal r64 token_parse_float(t_token* token) {
     c += 1;
   }
   
-  return(result*divisor);
+  return(sign*result*divisor);
 }
 
 
@@ -441,7 +454,7 @@ internal bool write_token_value_to_symbol(t_symbol_table* symbols, t_symbol* tar
   }
   else if(value->type == TOKEN_TYPE_IDENTIFIER) {
     t_symbol* source = symbol_find_by_token(symbols, value);
-    if(source == 0) return(false); // TODO(bumbread): do we want this to be less strict?
+    if(source == 0) return(false);
     symbol_copy_value(target, source);
   }
   else assert(0);
@@ -472,8 +485,8 @@ internal t_symbol_type get_corresponding_array_type(t_token_type elementType) {
   t_symbol_type arrayType = 0;
   switch((u32)elementType) {
     case(TOKEN_TYPE_INTEGER): arrayType = TYPE_ARRAY_INTEGER; break;
-    case(TOKEN_TYPE_FLOAT): arrayType = TYPE_ARRAY_FLOAT; break;
-    case(TOKEN_TYPE_STRING): arrayType = TYPE_ARRAY_STRING; break;
+    case(TOKEN_TYPE_FLOAT):   arrayType = TYPE_ARRAY_FLOAT; break;
+    case(TOKEN_TYPE_STRING):  arrayType = TYPE_ARRAY_STRING; break;
     default: assert(0);
   }
   return(arrayType);
