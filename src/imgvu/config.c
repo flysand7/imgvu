@@ -22,10 +22,30 @@ struct {
 
 global t_app_config app_config;
 
+internal t_array_i alloc_array_i(u32 len) {
+  t_array_i result;
+  result.len = len;
+  result.ptr = malloc(len * sizeof(i64));
+  return(result);
+}
+
+internal t_array_s alloc_array_s(u32 len) {
+  t_array_s result;
+  result.len = len;
+  result.ptr = malloc(len * sizeof(t_string));
+  return(result);
+}
+
+internal t_array_f alloc_array_f(u32 len) {
+  t_array_f result;
+  result.len = len;
+  result.ptr = malloc(len * sizeof(r32));
+  return(result);
+}
+
 internal void config_load_default(t_app_config* appConfig) {
   appConfig->error = false;
-  appConfig->colorCycle.len = 2;
-  appConfig->colorCycle.ptr = malloc(appConfig->colorCycle.len * sizeof(i64));
+  appConfig->colorCycle = alloc_array_i(2);
   appConfig->colorCycle.ptr[0] = 0xff000000;
   appConfig->colorCycle.ptr[1] = 0xffffffff;
   appConfig->backgroundColor = 0;
