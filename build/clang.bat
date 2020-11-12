@@ -1,6 +1,6 @@
 @echo off
 
-set use_asan_f=-fsanitize=address
+set use_asan_f=-fsanitize=memory
 
 REM DEBUG OR RELEASE
 set debug=-Z7 -Od -MT -DMODE_DEBUG
@@ -10,7 +10,6 @@ REM ================
 REM PROJECT SETTINGS
 REM ================
 
-set use_asan=0
 set defines=-D_CRT_SECURE_NO_WARNINGS -D_UNICODE -DUNICODE
 set mode=%debug%
 set lnk_libs=user32.lib gdi32.lib shell32.lib shlwapi.lib Userenv.lib opengl32.lib

@@ -25,7 +25,7 @@ global t_app_config app_config;
 internal void config_load_default(t_app_config* appConfig) {
   appConfig->error = false;
   appConfig->colorCycle.len = 2;
-  appConfig->colorCycle.ptr = malloc(appConfig->colorCycle.len * sizeof(u32));
+  appConfig->colorCycle.ptr = malloc(appConfig->colorCycle.len * sizeof(i64));
   appConfig->colorCycle.ptr[0] = 0xff000000;
   appConfig->colorCycle.ptr[1] = 0xffffffff;
   appConfig->backgroundColor = 0;
@@ -322,7 +322,7 @@ internal void symbol_copy_value(t_symbol* dest, t_symbol* source) {
   }
   else if(dest->type == TYPE_ARRAY_INTEGER) {
     dest->value_ai.len = source->value_ai.len;
-    dest->value_ai.ptr = malloc(dest->value_ai.len * sizeof(u32));
+    dest->value_ai.ptr = malloc(dest->value_ai.len * sizeof(i64));
     for(u32 index = 0; index < dest->value_ai.len; index += 1) {
       dest->value_ai.ptr[index] = source->value_ai.ptr[index];
     }
@@ -516,7 +516,7 @@ internal bool write_token_array_to_symbol(t_symbol_table* symbols, t_symbol* tar
   switch((u32)arrayType) {
     case(TYPE_ARRAY_INTEGER): {
       target->value_ai.len = arrayCount;
-      target->value_ai.ptr = malloc(target->value_ai.len * sizeof(u32));
+      target->value_ai.ptr = malloc(target->value_ai.len * sizeof(i64));
     } break;
     case(TYPE_ARRAY_FLOAT): {
       target->value_af.len = arrayCount;
@@ -541,7 +541,7 @@ internal bool write_token_array_to_symbol(t_symbol_table* symbols, t_symbol* tar
     
     switch((u32)elementType) {
       case(TOKEN_TYPE_INTEGER): {
-        target->value_ai.ptr[arrayIndex] = (u32)token_parse_integer(element);
+        target->value_ai.ptr[arrayIndex] = token_parse_integer(element);
       } break;
       case(TOKEN_TYPE_FLOAT): {
         target->value_af.ptr[arrayIndex] = (r32)token_parse_float(element);
@@ -743,7 +743,7 @@ internal void config_initialize_links(t_symbol_table* symbols, t_link_list* link
             case(TYPE_ARRAY_INTEGER): {
               link->value_ai->len = symbol->value_ai.len;
               if(link->value_ai->ptr) free(link->value_ai->ptr);
-              link->value_ai->ptr = malloc(link->value_ai->len * sizeof(u32));
+              link->value_ai->ptr = malloc(link->value_ai->len * sizeof(i64));
               for(u32 valueIndex = 0; valueIndex < symbol->value_ai.len; valueIndex += 1) {
                 link->value_ai->ptr[valueIndex] = symbol->value_ai.ptr[valueIndex];
               }
