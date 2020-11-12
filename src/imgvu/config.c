@@ -341,22 +341,19 @@ internal void symbol_copy_value(t_symbol* dest, t_symbol* source) {
     dest->value_s = string_copy_mem(source->value_s);
   }
   else if(dest->type == TYPE_ARRAY_INTEGER) {
-    dest->value_ai.len = source->value_ai.len;
-    dest->value_ai.ptr = malloc(dest->value_ai.len * sizeof(i64));
+    dest->value_ai = alloc_array_i(source->value_ai.len);
     for(u32 index = 0; index < dest->value_ai.len; index += 1) {
       dest->value_ai.ptr[index] = source->value_ai.ptr[index];
     }
   }
   else if(dest->type == TYPE_ARRAY_FLOAT) {
-    dest->value_af.len = source->value_af.len;
-    dest->value_af.ptr = malloc(dest->value_af.len * sizeof(r32));
+    dest->value_af = alloc_array_f(source->value_af.len);
     for(u32 index = 0; index < dest->value_af.len; index += 1) {
       dest->value_af.ptr[index] = source->value_af.ptr[index];
     }
   }
   else if(dest->type == TYPE_ARRAY_STRING) {
-    dest->value_as.len = source->value_as.len;
-    dest->value_as.ptr = malloc(dest->value_as.len * sizeof(t_string));
+    dest->value_as = alloc_array_s(source->value_as.len);
     for(u32 index = 0; index < dest->value_as.len; index += 1) {
       dest->value_as.ptr[index] = string_copy_mem(source->value_as.ptr[index]);
     }
@@ -534,18 +531,9 @@ internal bool write_token_array_to_symbol(t_symbol_table* symbols, t_symbol* tar
   
   t_symbol_type arrayType = get_corresponding_array_type(elementType);
   switch((u32)arrayType) {
-    case(TYPE_ARRAY_INTEGER): {
-      target->value_ai.len = arrayCount;
-      target->value_ai.ptr = malloc(target->value_ai.len * sizeof(i64));
-    } break;
-    case(TYPE_ARRAY_FLOAT): {
-      target->value_af.len = arrayCount;
-      target->value_af.ptr = malloc(target->value_af.len * sizeof(r32));
-    } break;
-    case(TYPE_ARRAY_STRING): {
-      target->value_as.len = arrayCount;
-      target->value_as.ptr = malloc(target->value_as.len * sizeof(t_string));
-    } break;
+    case(TYPE_ARRAY_INTEGER): target->value_ai = alloc_array_i(arrayCount); break;
+    case(TYPE_ARRAY_FLOAT):   target->value_af = alloc_array_f(arrayCount); break;
+    case(TYPE_ARRAY_STRING):  target->value_as = alloc_array_s(arrayCount); break;
     default: assert(0);
   }
   target->type = arrayType;
