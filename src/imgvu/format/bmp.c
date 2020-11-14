@@ -173,12 +173,12 @@ internal void try_parse_bmp(t_file_data* file, t_image* result) {
             } break;
             case(16): {
               
-              byte* data = stream.ptr + dataOffset;
-              u32 dataCounter = 0;
+              byte* data = stream.ptr;
+              u32 dataCounter = dataOffset;
+              
               loop {
-                u32 x = data[0];
-                u32 y = data[1];
-                data += 2;
+                u32 x = data[dataCounter + 0];
+                u32 y = data[dataCounter + 1];
                 dataCounter += 2;
                 if(dataCounter >= stream.size) goto error;
                 
@@ -207,13 +207,13 @@ internal void try_parse_bmp(t_file_data* file, t_image* result) {
               
               // TODO(bumbread): 64K boundary handling
               
-              byte* data = stream.ptr + dataOffset;
-              u32 dataCounter = 0;
+              byte* data = stream.ptr;
+              u32 dataCounter = dataOffset;
+              
               loop {
-                u32 b = data[0];
-                u32 g = data[1];
-                u32 r = data[2];
-                data += 3;
+                u32 b = data[dataCounter + 0];
+                u32 g = data[dataCounter + 1];
+                u32 r = data[dataCounter + 2];
                 dataCounter += 3;
                 if(dataCounter >= stream.size) goto error;
                 
@@ -234,14 +234,14 @@ internal void try_parse_bmp(t_file_data* file, t_image* result) {
             } break;
             case(32): {
               
-              byte* data = stream.ptr + dataOffset;
-              u32 dataCounter = 0;
+              byte* data = stream.ptr;
+              u32 dataCounter = dataOffset;
+              
               loop {
-                u32 b = data[0];
-                u32 g = data[1];
-                u32 r = data[2];
-                u32 a = data[3];
-                data += 4;
+                u32 b = data[dataCounter + 0];
+                u32 g = data[dataCounter + 1];
+                u32 r = data[dataCounter + 2];
+                u32 a = data[dataCounter + 3];
                 dataCounter += 4;
                 if(dataCounter >= stream.size) goto error;
                 
