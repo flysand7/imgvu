@@ -1,0 +1,235 @@
+Bitmap AKA Device Independent Bitmap (DIB) was designed by Microsoft Corporation to easily exchange images between different devices without worrying about the device’s logic to display raster images on the screen. These files have .bmp or .dib extensions.
+
+The BMP file format is capable of storing two-dimensional digital images both monochrome and color, in various color depths, and optionally with data compression, alpha channels, and color profiles.
+
+=======================================
+|| 1. File structure                 ||
+=======================================
+
+All multibyte values are in the _little endian_ format.
+The bitmap file format consists of the following parts:
+
+----------------------------------------
+1.1 Bitmap File Header.
+----------------------------------------
+
+This structure size is always 14 (0x0e) bytes, and it stores the general information about the image. Bitmap format signature, file size and image data offset are stored in there. The layour of this structure is described below.
++------------------------------------------------------------------+
+| OFFSET | SIZE |    FIELD NAME                                    |
++------------------------------------------------------------------+
+|  0x00  |  02  | Header field used to identify BMP and DIB        |
+|        |      | file. For bitmap the value is 0x4D42 ('BM' in    |
+|        |      | ascii). Other values:                            |
+|        |      | BM: windows bitmap.                              |
+|        |      | BA: OS/2 struct bitmap array                     |
+|        |      | CI: OS/2 struct color icon                       |
+|        |      | CP: OS/2 const color pointer                     |
+|        |      | IC: OS/2 struct icon                             |
+|        |      | PT: OS/2 pointer                                 |
++------------------------------------------------------------------+
+|  0x02  |  04  | The size of this file in bytes.                  |
++------------------------------------------------------------------+
+|  0x06  |  02  | Reserved 0                                       |
++------------------------------------------------------------------+
+|  0x08  |  02  | Reserved 1                                       |
++------------------------------------------------------------------+
+|  0x0a  |  04  | The offset from the beginning of the file of     |
+|        |      | where the pixel data starts.                     |
++------------------------------------------------------------------+
+The fields are self-explanatory.
+
+----------------------------------------
+1.2 DIB Header.
+----------------------------------------
+
+This structure immediatelly follows the Bitmap File Header. Thus it has an offset of 0x0e from the start of the file. 
+
+The size of the DIB Header is variable, depending on the version of BMP. The size of the header is stored in the first 4 bytes of DIB header. Different sizes correspond to different versions. The minimum size of DIB Header is 12 bytes. Windows version of BMP has diverged from OS/2 bitmap. Any given version of DIB Header is backwards compatible from previous version, meaning that an earlier version of DIB Header is a strict subset of a later version, except V1.
+
+Core bitmap DIB Header:
+
++--------+------+--------------------------------------------------+
+| OFFSET | SIZE |    FIELD NAME                                    |
++------------------------------------------------------------------+
+|  0x0e  |  04  | The size of DIB header.                          |
++------------------------------------------------------------------+
+|  0x12  |  02  | Bitmap width in pixels.                          |
++------------------------------------------------------------------+
+|  0x14  |  02  | Bitmap height in pixels.                         |
++------------------------------------------------------------------+
+|  0x16  |  02  | Number of color planes, **has to be 1**          |
++------------------------------------------------------------------+
+|  0x18  |  02  | Number of bits per pixel                         |
++--------+------+--------------------------------------------------+
+
+Following the windows BMP versions, here are the changes to the struct for each version.
+
+(a) V1 DIB Header:
+Note V1 DIB Header is different, in that it changes Bitmap width and height fields from 2 byte unsigned integers to 4 byte signed integers) and therefore _is not compatible with core header_.
+
+The V1 DIB Header:
++--------+------+--------------------------------------------------+
+| OFFSET | SIZE |    FIELD NAME                                    |
++------------------------------------------------------------------+
+|  0x0e  |  04  | The size of DIB header.                          |
++------------------------------------------------------------------+
+|  0x12  |  04  | Bitmap width in pixels.                          |
++------------------------------------------------------------------+
+|  0x16  |  04  | Bitmap height in pixels.                         |
++------------------------------------------------------------------+
+|  0x1a  |  02  | Number of color planes,                          |
++------------------------------------------------------------------+
+|  0x1c  |  02  | Number of bits per pixel                         |
++--------+------+--------------------------------------------------+
+|  0x1e  |  04  | Compression method                               |
++------------------------------------------------------------------+
+|  0x22  |  04  | Image Size                                       |
++------------------------------------------------------------------+
+|  0x26  |  04  | x pixels per meter                               |
++------------------------------------------------------------------+
+|  0x2a  |  04  | y pixels per meter                               |
++------------------------------------------------------------------+
+|  0x2e  |  04  | # of palette colors used                         |
++------------------------------------------------------------------+
+|  0x32  |  04  | # of important palette colors                    |
++--------+------+--------------------------------------------------+
+
+According to microsoft documentation:
+
+- Bitmap width and height are signed 4 byte integers. If Bitmap height is negative, the bitmap is considered to be a top-down DIB (origin in upper-left corner). Otherwise a bottom-up DIB (origin in lower-left corner).
+- The number of color planes _has to be_ 1.
+- Bits per pixel can be one of the following values:
+    (a) 0: then the compression should be BI_JPEG or BI_PNG. In that case the actual value of bits per pixel  is implied by the format of the data.
+    (b) 1, 4 or 8: then the image contains n bits per pixels, such that every byte contains the information for 8/n pixels, starting from the higher-order bits, such that every n bits correspond to a palette entry index. Therefore the maximum number of palette colors is 2^n.
+    (c) 16: then every 16-bit value in the data section represents a single pixel.
+        <note: the below should be more concrete>
+        - if the Compression is RGB (0x00), then Colors Used field should be 0. In that case every 16-bit value represents RGB pixel, usually in 5-6-5 format 
+        - if Colors Used is not zero, then I advise to treat this case as an error state, since almost no bmp image uses palette for 16 bit formats, and microsoft documentation contains contradiction about what happens.
+        - If the Compression is BITFIELDS (0x03), the Color Palette specifies 3 color masks for red, green, and blue respectively. Every mask must be contiguous, and they should not overlap. Not all the bits in the pixel have to be used.
+    (d) 24: then each 3-byte triplet represents blue, red and green respectively. if Colors Used is not zero, treat as error state.
+    (e) 32: then Colors Used field should be 0. 
+        - If Compression is RGB (0x00), each 4-byte quadriplet represents blue, read, green, and unused byte respectively.
+        - If Compression is BITFIELDS, each then color palette specifies bitfield masks the same way as for 16 bit values (unused pixel isn't specified it seems). Although not explicitly stated by the documentation, the unused byte can represent an alpha channel.
+- Image size is the data size in bytes. This field can zero for Compression RGB (0x00) images, since the data is uncompressed, this field is computed trivially as:
+    `image_size = abs(image_height) * floor((bits_per_pixel * image_width + 31) / 32) * 4`.
+    NOTE: it's not just `abs(image_height) * image_width * (bits_per_pixel / 8)`. Why, will be explained in the Image Data Format section.
+- Compression can be one of the following:
+    (a) 0x00: BI_RGB, an uncompressed image. All pixels are stored contiguously in rows from left to right. Every row is aligned on 4 byte boundary from the data start point.
+    (b) 0x01: RLE8 (run-length encoding, 8 bit per pixel), a compressed format only for 8 Bits per pixel bitmaps.
+    (c) 0x02: RLE4 (run-length encoding, 4 bits per pixel), a compressed format only for 4 bits per pixel bitmaps.
+    (d) 0x03: BITFIELDS, an uncompressed format only for 16 and 32 bits per pixel bitmaps, specifies that every color is described by three 4 byte masks.
+    (e) 0x04: JPEG, image data is JPEG image.
+    (f) 0x05: PNG, image data is PNG image.
+- x,y pixels per meter values can be ignored, they aren't needed for parsing the actual image data.
+- Colors Used contains either the number of colors in the palette or zero. Zero means that the number of colors in the palette is the maximum available for the given bits-per-pixel and compression.
+
+(b) V2 and V3 DIB Header.
+Not documented by Microsoft, but it is said that this documentation was posted on Adobe's forums, by an employee of Adobe with a statement that the standard was at one point in the past included in official MS documentation.
+
+(c) V4 DIB header.
+However V4 DIB header is documented, and it adds the following fields to the V1 DIB Header:
+
+V4 DIB Header extension of V1 DIB Header:
+
++--------+------+--------------------------------------------------+
+| OFFSET | SIZE |    FIELD NAME                                    |
++------------------------------------------------------------------+
+|  0x36  |  04  | Red Mask                                         |
++------------------------------------------------------------------+
+|  0x3a  |  04  | Green Mask                                       |
++------------------------------------------------------------------+
+|  0x3e  |  04  | Blue Mask                                        |
++------------------------------------------------------------------+
+|  0x42  |  04  | Alpha Mask                                       |
++------------------------------------------------------------------+
+|  0x46  |  04  | Color Space                                      |
++------------------------------------------------------------------+
+|  0x4a  |  36  | CIE XYZ Coordinates for each color               |
++------------------------------------------------------------------+
+|  0x6e  |  04  | Red Gamma                                        |
++------------------------------------------------------------------+
+|  0x72  |  04  | Green Gamma                                      |
++------------------------------------------------------------------+
+|  0x74  |  04  | Blue Gamma                                       |
++--------+------+--------------------------------------------------+
+
+- Red, Green, Blue and Alpha masks are used only if the Compression is BITFIELDS (0x03).
+- Color Space can be one of the following values:
+	0x00 - CALIBRATED_RGB:      the endpoints and gamma are in the appropriate fields
+	0x01 - sRGB:                the bitmap is in sRGB color space.
+	0x02 - WINDOWS_COLOR_SPACE: the same as sRGB
+	0x03 - PROFILE_LINKED:      Profile Data (V5) points to the filename that contains the file profile
+	0x04 - PROFILE_EMBEDDED:    Profile Data (V5) points to the profile data.
+- CIE XYZ coordinates and gamma values are valid only if the Color Space field is CALIBRATED_RGB (0x00). And are given in 
+- Gamma values are in 16.16 fixed point format.
+
+(c) V5 DIB Header.
+V5 DIB Header adds the following fields to the V4 DIB Header:
+
++--------+------+--------------------------------------------------+
+| OFFSET | SIZE |    FIELD NAME                                    |
++------------------------------------------------------------------+
+|  0x78  |  04  | Rendering Intent                                 |
++------------------------------------------------------------------+
+|  0x7c  |  04  | Profile Data                                     |
++------------------------------------------------------------------+
+|  0x80  |  04  | Profile Size                                     |
++------------------------------------------------------------------+
+|  0x84  |  04  | Reserved 2                                       |
++------------------------------------------------------------------+
+
+Rendering Intent can be one of the following:
+	0x00 - ABS_COLORIMETRIC: maintains the white point. matches the colors to their nearest color in the destination gamut.
+	0x01 - BUSINESS: maintains saturation.
+	0x02 - GRAPHICS: maintains colorimetric match.
+	0x03 - IMAGES:   maintains contrast.
+
+Profile Data is the offset from the beginning of the header (0x0e) to the start of the profile data. the profile data is zero-terminated ascii string. if the Color Space doesn't specify PROFILE_LINKED or PROFILE_EMBEDDED, this field is ignored.
+
+Profile Size is the size, in bytes of the profile data.
+
+----------------------------------------
+1.2. Color palette
+----------------------------------------
+
+The color palette immediately follows the DIB Header and is optional. The color palette is present if
+(a) The bitmap is 1-4 bits per pixel, either compressed or uncompressed.
+(b) The bitmap is 8 bits per pixel. <todo: can it be greyscale, and, if so, how to know that?>
+
+----------------------------------------
+1.3. Image Data
+----------------------------------------
+
+Image data is always present, it's location is found only though the pixel offset in the Bitmap File Header. The format of the data depends on the fields specified in the DIB Header. 
+
+Regardless of the format, the data is stored in rows, in each rows the pixels go left to right. If the bits per pixel is less than 8, then the leftmost pixels are represented by higher-order bits. Every row is 4-byte aligned. Therefore the size of every row is divisible by 4. To find the size of the row:
+
+row_size = floor((bits_per_pixel * image_width + 31) / 32) * 4;
+
+=======================================
+|| 3. RLE-8 Compression notes.       ||
+=======================================
+
+RLE, or run-length encoding is a method of compressing data, basic idea of which is replacing every contiguous block of repeating bytes with the small piece of data that describes what byte is being repeated and how many times it gets repeated. Apart from that there are also control sequences that perform other operations, such as skipping to the new line, or marking next N bytes as beign unencoded.
+
+For the next byte that you read:
+	if that byte is 0, than this is the escape byte.
+		if the next byte is 0, then the next read corresponds to the start of the next row of the target image.
+		else if the next byte is 1, then the read should be stopped.
+		else if the next byte is 2, then the next two bytes specify the horizontal and vertical offsets from the current position of the next target pixel.
+		else the next byte is the number of following bytes of uncompressed data.
+	else that byte represents amount of times that the following byte is repeated.
+	then align on 16-bit boundary.
+
+<todo: can the offset be negative?>
+
+[00 00       // new line
+ 09 05       // repeat the byte 05, 9 times.
+ 00 02 05 06 // continue at 5 bytes left and 6 bytes down from the current position.
+ 00 01]      // stop read.
+
+=======================================
+|| 4. RLE-4 Compression notes.       ||
+=======================================
+
+RLE-4 does not differ from RLE-8 technically. But the result of decompression is different conceptually. Since, for example [04 0f] means repeat the byte 0f, 4 times, the same thing happens with RLE-4. The target color indices would be these: [0 f 0 f 0 f 0 f]. Notice how they alternate.
