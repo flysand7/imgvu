@@ -2,6 +2,8 @@
 // bumbread's imgvu
 //
 
+#include"format/stream.c"
+#include"format/color.c"
 #include"format/bmp.c"
 #include"format/pnm.c"
 

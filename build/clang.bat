@@ -1,5 +1,6 @@
 @echo off
 
+if not defined use_asan set use_asan=0
 set use_asan_f=-fsanitize=memory
 
 REM DEBUG OR RELEASE
