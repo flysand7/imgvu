@@ -204,7 +204,7 @@ The colors in the color table are usually specified in the 4-byte per entry RGBA
 
 Image data is always present, it's location is found only though the pixel offset in the Bitmap File Header. The format of the data depends on the fields specified in the DIB Header. 
 
-Regardless of the format, the data is stored in rows, in each rows the pixels go left to right. If the bits per pixel is less than 8, then the leftmost pixels are represented by higher-order bits. Every row is 4-byte aligned. Therefore the size of every row is divisible by 4. To find the size of the row:
+Regardless of the format, if it is uncompressed, the data is stored in rows, in each rows the pixels go left to right. If the bits per pixel is less than 8, then the leftmost pixels are represented by higher-order bits. Every row is 4-byte aligned. Therefore the size of every row is divisible by 4. To find the size of the row:
 
 row_size = floor((bits_per_pixel * image_width + 31) / 32) * 4;
 
