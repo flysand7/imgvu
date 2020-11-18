@@ -268,6 +268,8 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           goto finish;
         }
         if(data.error == true) {goto error;}
+        stream_align(&data, 4);
+        currentBit = 8;
       }
     }
     
@@ -332,6 +334,7 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
               break;
             }
           }
+          
         }
       }
       
@@ -366,6 +369,8 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
             rowCounter = 0;
             goto finish;
           }
+          stream_align(&data, 4);
+          order = 2;
         }
       }
       
@@ -425,6 +430,7 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           }
         }
         if(data.error) {goto error;}
+        stream_align(&data, 4);
       }
     }
   }
@@ -449,6 +455,7 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           goto finish;
         }
         if(data.error) {goto error;}
+        stream_align(&data, 4);
       }
     }
     
@@ -474,6 +481,7 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           goto finish;
         }
         if(data.error) {goto error;}
+        stream_align(&data, 4);
       }
       
     }
@@ -503,6 +511,7 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           goto finish;
         }
         if(data.error) {goto error;}
+        stream_align(&data, 4);
       }
       
     }

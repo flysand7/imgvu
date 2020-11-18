@@ -32,12 +32,10 @@ internal inline bool is_power_of_two(u32 i) {
 
 internal inline u32 u32_align_forward(u32 value, u32 alignment) {
   assert(is_power_of_two(alignment));
-  u32 alignedValue = value;
-  if(alignedValue % alignment != 0) {
-    // TODO(bumbread): there was a more neat way to write this.
-    alignedValue = value + ((alignment - (value % alignment)) & (alignment - 1));
-  }
-  return(value);
+  u32 p = value;
+  u32 m = p & (alignment - 1);
+  if(m != 0) {p += alignment - m;}
+  return(p);
 }
 
 struct {
