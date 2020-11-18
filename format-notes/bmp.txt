@@ -196,6 +196,8 @@ The color palette immediately follows the DIB Header and is optional. The color 
 (a) The bitmap is 1-4 bits per pixel, either compressed or uncompressed.
 (b) The bitmap is 8 bits per pixel. <todo: can it be greyscale, and, if so, how to know that?>
 
+The colors in the color table are usually specified in the 4-byte per entry RGBA32 format. The color table used with the OS/2 BITMAPCOREHEADER uses the 3-byte per entry RGB24 format
+
 ----------------------------------------
 1.3. Image Data
 ----------------------------------------
@@ -210,7 +212,7 @@ row_size = floor((bits_per_pixel * image_width + 31) / 32) * 4;
 || 3. RLE-8 Compression notes.       ||
 =======================================
 
-RLE, or run-length encoding is a method of compressing data, basic idea of which is replacing every contiguous block of repeating bytes with the small piece of data that describes what byte is being repeated and how many times it gets repeated. Apart from that there are also control sequences that perform other operations, such as skipping to the new line, or marking next N bytes as beign unencoded.
+RLE, or run-length encoding is a method of compressing data, basic idea of which is replacing every contiguous block of repeating bytes with the small piece of data that describes what byte is being repeated and how many times it gets repeated. Apart from that there are also control sequences that perform other operations, such as skipping to the new line, or marking next N bytes as being unencoded.
 
 For the next byte that you read:
 	if that byte is 0, than this is the escape byte.
@@ -232,4 +234,4 @@ For the next byte that you read:
 || 4. RLE-4 Compression notes.       ||
 =======================================
 
-RLE-4 does not differ from RLE-8 technically. But the result of decompression is different conceptually. Since, for example [04 0f] means repeat the byte 0f, 4 times, the same thing happens with RLE-4. The target color indices would be these: [0 f 0 f 0 f 0 f]. Notice how they alternate.
+RLE-4 does not differ from RLE-8 technically. But the result of decompression is different conceptually. Since, for example [04 0f] means repeat the byte 0f, 4 times, the same thing happens with RLE-4. The target color indices would be these: [0 f 0 f 0 f 0 f]. Note how the pixel color indices alternate.

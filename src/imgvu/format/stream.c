@@ -106,7 +106,7 @@ internal inline u16 stream_read_u16_be(t_stream* stream) {
 internal inline i32 stream_read_i32_le(t_stream* stream) {
   byte* b = stream_read(stream, 4);
   if(!stream->error) {
-    i32 result = ((i32)b[0] << 24) | ((i32)b[1] << 16) | ((i32)b[2] << 8) | ((i32)b[3]);
+    i32 result = ((i32)b[0]) | ((i32)b[1] << 8) | ((i32)b[2] << 16) | ((i32)b[3] << 24);
     return(result);
   }
   return(0);
@@ -115,7 +115,7 @@ internal inline i32 stream_read_i32_le(t_stream* stream) {
 internal inline i32 stream_read_i32_be(t_stream* stream) {
   byte* b = stream_read(stream, 4);
   if(!stream->error) {
-    i32 result = ((i32)b[0]) | ((i32)b[1] << 8) | ((i32)b[2] << 16) | ((i32)b[3] << 24);
+    i32 result = ((i32)b[0] << 24) | ((i32)b[1] << 16) | ((i32)b[2] << 8) | ((i32)b[3]);
     return(result);
   }
   return(0);
@@ -124,7 +124,7 @@ internal inline i32 stream_read_i32_be(t_stream* stream) {
 internal inline u32 stream_read_u32_le(t_stream* stream) {
   byte* b = stream_read(stream, 4);
   if(!stream->error) {
-    u32 result = ((u32)b[0] << 24) | ((u32)b[1] << 16) | ((u32)b[2] << 8) | ((u32)b[3]);
+    u32 result = ((u32)b[0]) | ((u32)b[1] << 8) | ((u32)b[2] << 16) | ((u32)b[3] << 24);
     return(result);
   }
   return(0);
@@ -133,7 +133,7 @@ internal inline u32 stream_read_u32_le(t_stream* stream) {
 internal inline u32 stream_read_u32_be(t_stream* stream) {
   byte* b = stream_read(stream, 4);
   if(!stream->error) {
-    u32 result = ((u32)b[0]) | ((u32)b[1] << 8) | ((u32)b[2] << 16) | ((u32)b[3] << 24);
+    u32 result = ((u32)b[0] << 24) | ((u32)b[1] << 16) | ((u32)b[2] << 8) | ((u32)b[3]);
     return(result);
   }
   return(0);
