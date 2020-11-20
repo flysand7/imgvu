@@ -20,6 +20,11 @@ struct t_directory_state_s {
   bool changed;
 } typedef t_directory_state;
 
+internal inline void win32_set_current_file(t_directory_state *dirState, t_file *file) {
+  dirState->currentFile = file;
+  dirState->changed = true;
+}
+
 internal void win32_file_uncache(t_file *file) {
   assert(file);
   assert(file->cached);
@@ -71,7 +76,7 @@ internal inline void win32_cache_clear(t_directory_state *dirState) {
     if(file == dirState->file) {break;}
   }
   dirState->file = 0;
-  dirState->currentFile = 0;
+  win32_set_current_file(dirState, 0);
 }
 
 // NOTE(bumbread): removes and uncaches all 
@@ -86,7 +91,7 @@ internal inline void win32_directory_free_files(t_directory_state* dirState) {
     file = next;
     if(file == dirState->file) {break;}
   }
-  dirState->currentFile = 0;
+  win32_set_current_file(dirState, 0);
 }
 
 // NOTE(bumbread): remove the file from directory and 
@@ -98,7 +103,7 @@ internal void win32_directory_file_remove(t_directory_state *dirState, t_file *f
     assert(file->next != file);
     
     if(file == dirState->file) { //we're removing the file we're viewing
-      dirState->currentFile = dirState->currentFile->next;
+      win32_set_current_file(dirState, dirState->currentFile->next);
     }
     
     t_file *left = file->prev;
@@ -114,8 +119,9 @@ internal void win32_directory_file_remove(t_directory_state *dirState, t_file *f
     if(file->cached) {win32_file_uncache(file);}
     win32_file_free(file);
     dirState->file = 0;
-    dirState->currentFile = 0;
+    win32_set_current_file(dirState, 0);
   }
+  dirState->changed = true;
 }
 
 internal inline void win32_file_insert(t_file *left, t_file *file, t_file* right) {
@@ -258,6 +264,7 @@ internal t_file *win32_directory_add(t_directory_state *dirState, t_string16 fil
     }
   }
   
+  dirState->changed = true;
   return(file);
 }
 
@@ -307,6 +314,6 @@ internal void win32_directory_scan(t_directory_state* dirState) {
     }
   }
   
-  dirState->currentFile = dirState->file;
+  win32_set_current_file(dirState, dirState->file);
   win32_cache_update(dirState);
 }
