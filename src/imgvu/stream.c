@@ -22,6 +22,10 @@ internal inline bool stream_is_pointer_within(t_stream* stream, u32 offset) {
   return(offset < stream->size);
 }
 
+internal inline bool stream_can_read_size(t_stream* stream, u32 size) {
+  return((stream->size - stream->offset) >= size);
+}
+
 internal inline bool stream_offset(t_stream* stream, u32 offset) {
   if(stream->error == false) {
     if(offset < stream->size) {
@@ -49,7 +53,7 @@ internal inline bool stream_align(t_stream* stream, u32 alignment) {
 
 internal inline void* stream_read(t_stream* stream, u32 size) {
   if(!stream->error) {
-    if(stream->offset + size < stream->size) {
+    if(stream->offset + size <= stream->size) {
       byte* oldPointer = stream->start + stream->offset;
       stream->offset += size;
       return(oldPointer);

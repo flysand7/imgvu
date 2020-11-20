@@ -239,26 +239,22 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
   }
   
   if(bmp->bitsPerPixel == 1) {
+    if(stream_can_read_size(&data, bmp->imageSize) == false) {goto error;}
     
     u32 currentBit = 8;
     byte currentByte = stream_read_byte(&data);
-    
     u32 colCounter = 0;
     u32 rowCounter = 0;
-    
     loop {
       currentBit -= 1;
-      
       u32 value = 1&(currentByte >> currentBit);
       // TODO(bumbread): out of bounds checking
       u32 color = bmp->palette[value];
       image.pixels[rowCounter*image.width + colCounter] = color;
-      
       if(currentBit == 0) {
         currentBit = 8;
         currentByte = stream_read_byte(&data);
       }
-      
       colCounter += 1;
       if(colCounter == image.width) {
         colCounter = 0;
@@ -267,24 +263,20 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           rowCounter = 0;
           goto finish;
         }
-        if(data.error == true) {goto error;}
+        assert(data.error == false);
         stream_align(&data, 4);
         currentBit = 8;
       }
     }
-    
   }
   else if(bmp->bitsPerPixel == 4) {
     if(bmp->compressionMethod == BMP_COMPRESSION_RLE4) {
       
       u32 colCounter = 0;
       u32 rowCounter = 0;
-      
       loop {
-        
         stream_align(&data, 2);
         byte currentByte = stream_read_byte(&data);
-        
         if(currentByte == 0) { //escape byte
           currentByte = stream_read_byte(&data); // end of line
           if(data.error == true) {goto error;}
@@ -334,33 +326,27 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
               break;
             }
           }
-          
         }
       }
-      
     }
     else {
+      if(stream_can_read_size(&data, bmp->imageSize)) {goto error;}
       
       u32 rowCounter = 0;
       u32 colCounter = 0;
-      
       byte currentByte = stream_read_byte(&data);
       u32 order = 2;
-      
       loop {
         stream_align(&data, 2);
-        
         order -= 1;
         u32 value = 0xf&(currentByte>>order);
-        // TODO(bumbread): out of bounds
+        // TODO(bumbread): out of bounds check
         u32 color = bmp->palette[value];
         image.pixels[colCounter + rowCounter*image.width] = color;
-        
         if(order == 0) {
           order = 2;
           currentByte = stream_read_byte(&data);
         }
-        
         colCounter += 1;
         if(colCounter == bmp->bitmapWidth) {
           colCounter = 0;
@@ -371,9 +357,9 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           }
           stream_align(&data, 4);
           order = 2;
+          assert(data.error == false);
         }
       }
-      
     }
   }
   else if(bmp->bitsPerPixel == 8) {
@@ -381,10 +367,8 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
       
       u32 colCounter = 0;
       u32 rowCounter = 0;
-      
       stream_align(&data, 2);
       byte currentByte = stream_read_byte(&data);
-      
       if(currentByte == 0) { //escape byte
         currentByte = stream_read_byte(&data); // end of line
         if(data.error == true) {goto error;}
@@ -433,8 +417,31 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
         stream_align(&data, 4);
       }
     }
+    else {
+      if(stream_can_read_size(&data, bmp->imageSize) == false) {goto error;}
+      
+      u32 colCounter = 0;
+      u32 rowCounter = 0;
+      loop {
+        u32 nextByte = (u32)stream_read_byte(&data);
+        u32 color = (nextByte) | (nextByte << 8) | (nextByte << 16) | (0xffu << 24);
+        image.pixels[rowCounter*image.width + colCounter] = color;
+        colCounter += 1;
+        if(colCounter == image.width) {
+          colCounter = 0;
+          rowCounter += 1;
+          if(rowCounter == image.height) {
+            rowCounter = 0;
+            goto finish;
+          }
+          stream_align(&data, 4);
+          assert(data.error == false);
+        }
+      }
+    }
   }
   else if(bmp->bitsPerPixel == 16) {
+    if(stream_can_read_size(&data, bmp->imageSize) == false) {goto error;}
     
     u32 colCounter = 0;
     u32 rowCounter = 0;
@@ -445,7 +452,6 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
       u32 green = get_sample_from_mask(nextWord << 16, bmp->greenMask);
       u32 color = (red) | (green << 8) | (blue << 16) | (0xffu << 24);
       image.pixels[rowCounter*image.width + colCounter] = color;
-      
       colCounter += 1;
       if(colCounter == image.width) {
         colCounter = 0;
@@ -454,24 +460,22 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           rowCounter = 0;
           goto finish;
         }
-        if(data.error) {goto error;}
+        assert(data.error == false);
         stream_align(&data, 4);
       }
     }
-    
   }
   else if(bmp->bitsPerPixel == 24) {
+    if(stream_can_read_size(&data, bmp->imageSize) == false) {goto error;}
     
     u32 colCounter = 0;
     u32 rowCounter = 0;
     loop {
-      
       u32 blue = stream_read_byte(&data);
       u32 green = stream_read_byte(&data);
       u32 red = stream_read_byte(&data);
       u32 color = (red) | (green << 8) | (blue << 16) | (0xffu << 24);
       image.pixels[rowCounter*image.width + colCounter] = color;
-      
       colCounter += 1;
       if(colCounter == image.width) {
         colCounter = 0;
@@ -480,28 +484,24 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           rowCounter = 0;
           goto finish;
         }
-        if(data.error) {goto error;}
+        assert(data.error == false);
         stream_align(&data, 4);
       }
-      
     }
-    
   }
   else if(bmp->bitsPerPixel == 32) {
+    if(stream_can_read_size(&data, bmp->imageSize) == false) {goto error;}
     
     u32 colCounter = 0;
     u32 rowCounter = 0;
     loop {
-      
       u32 color = stream_read_u32_le(&data);
       u32 red = get_sample_from_mask(color, bmp->redMask);
       u32 green = get_sample_from_mask(color, bmp->greenMask);
       u32 blue = get_sample_from_mask(color, bmp->blueMask);
       u32 alpha = get_sample_from_mask(color, bmp->alphaMask);
       color = (red) | (green << 8) | (blue << 16) | (alpha << 24);
-      
       image.pixels[rowCounter*image.width + colCounter] = color;
-      
       colCounter += 1;
       if(colCounter == image.width) {
         colCounter = 0;
@@ -510,10 +510,9 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           rowCounter = 0;
           goto finish;
         }
-        if(data.error) {goto error;}
+        assert(data.error == false);
         stream_align(&data, 4);
       }
-      
     }
   }
   
