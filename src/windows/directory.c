@@ -102,8 +102,11 @@ internal void win32_directory_file_remove(t_directory_state *dirState, t_file *f
   if(isLastFile == false) {
     assert(file->next != file);
     
-    if(file == dirState->file) { //we're removing the file we're viewing
+    if(file == dirState->currentFile) { //we're removing the file we're viewing
       win32_set_current_file(dirState, dirState->currentFile->next);
+    }
+    if(file == dirState->file) {
+      dirState->file = dirState->file->next;
     }
     
     t_file *left = file->prev;
@@ -166,10 +169,26 @@ internal void win32_cache_update(t_directory_state *dirState) {
   t_file *file = dirState->currentFile;
   if(file == 0) return;
   
+  t_file *last = file->prev;
+  loop {
+    t_file *next = file->next;
+    if(file->cached == false) {
+      win32_load_cache_file(file);
+      if(file->cached == false) {
+        bool isLastFile = (file->next == file);
+        win32_directory_file_remove(dirState, file);
+        if(isLastFile) {
+          break;
+        }
+      }
+    }
+    file = next;
+    if(file == last) {break;}
+  }
+  
   t_file *left = file->prev;
   t_file *right = file->next;
   
-  // NOTE(bumbread): current file always stays in the cache;
   u32 distance = 1;
   loop {
     if(left->prev == right) {

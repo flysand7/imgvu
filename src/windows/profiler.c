@@ -20,7 +20,7 @@ internal t_clock clock_seconds(void) {
 }
 
 internal r64 clock_diff(t_clock end, t_clock start) {
-  assert(end.QuadPart > start.QuadPart);
+  assert(end.QuadPart >= start.QuadPart);
   u64 difference = (u64)(end.QuadPart - start.QuadPart);
   r64 seconds = (r64)difference / (r64)clockFrequency;
   return(seconds);
