@@ -170,6 +170,7 @@ internal void win32_cache_update(t_directory_state *dirState) {
   if(file == 0) return;
   
   t_file *last = file->prev;
+  bool exit = false;
   loop {
     t_file *next = file->next;
     if(file->cached == false) {
@@ -182,9 +183,13 @@ internal void win32_cache_update(t_directory_state *dirState) {
         }
       }
     }
+    if(exit) {break;}
     file = next;
-    if(file == last) {break;}
+    if(file == last) {exit = true;}
   }
+  
+  file = dirState->currentFile;
+  if(file == 0) return;
   
   t_file *left = file->prev;
   t_file *right = file->next;

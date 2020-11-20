@@ -173,6 +173,9 @@ int main(void)
   
   r32 dt = 0;
   loop {
+    
+    profile_block_start(ccc);
+    
     {
       MSG message;
       while(PeekMessageW(&message, g_window.handle, 0, 0, PM_REMOVE)) {
@@ -184,6 +187,8 @@ int main(void)
     
     bool stop = app_update(&g_app_state, &directoryState, &g_app_input, dt);
     if(stop) break;
+    
+    profile_block_end(ccc);
     
     app_draw(&g_app_state);
     
