@@ -1,7 +1,7 @@
 @echo off
 
 rem set compiler=%1
-if not defined compiler set compiler=clang
+if not defined compiler (set compiler=clang)
 
 set input_file_name=src\imgvu_windows.c
 set output_file_name=imgvu
