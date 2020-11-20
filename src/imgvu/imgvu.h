@@ -87,6 +87,10 @@ internal bool platform_write_file(t_file_data file);
 internal t_string16 platform_get_config_filename(void);
 
 #include"config.c"
+#include"stream.c"
+#include"color.c"
+#include"format/bmp.c"
+#include"format/pnm.c"
 
 struct {
   bool initialized;

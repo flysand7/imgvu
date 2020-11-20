@@ -2,11 +2,6 @@
 // bumbread's imgvu
 //
 
-#include"format/stream.c"
-#include"format/color.c"
-#include"format/bmp.c"
-#include"format/pnm.c"
-
 internal t_image app_decode_file(t_file_data data) {
   t_image result = {0};
   result.success = false;
