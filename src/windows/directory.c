@@ -6,6 +6,7 @@ struct t_file {
   struct t_file *next;
   struct t_file *prev;
   
+  bool freed;
   bool found;
   bool cached;
 } typedef t_file;
@@ -99,6 +100,7 @@ internal inline void win32_directory_free_files(t_directory_state* dirState) {
 internal void win32_directory_file_remove(t_directory_state *dirState, t_file *file) {
   assert(file != 0);
   bool isLastFile = file->prev == file;
+  
   if(isLastFile == false) {
     assert(file->next != file);
     
@@ -152,7 +154,10 @@ internal bool win32_load_cache_file(t_file *file) {
         file->cached = true;
         return(true);
       }
-      else return(false);
+      else {
+        assert(file->image.pixels == 0);
+        return(false);
+      }
       
     }
   }
@@ -166,13 +171,16 @@ internal bool win32_load_cache_file(t_file *file) {
 // into the cache, unload the files that should not be in the cache
 // out of the cache.
 internal void win32_cache_update(t_directory_state *dirState) {
+  
   t_file *file = dirState->currentFile;
   if(file == 0) return;
   
   t_file *last = file->prev;
   bool exit = false;
+  
   loop {
     t_file *next = file->next;
+    
     if(file->cached == false) {
       win32_load_cache_file(file);
       if(file->cached == false) {
@@ -183,6 +191,7 @@ internal void win32_cache_update(t_directory_state *dirState) {
         }
       }
     }
+    
     if(exit) {break;}
     file = next;
     if(file == last) {exit = true;}
@@ -293,6 +302,7 @@ internal t_file *win32_directory_add(t_directory_state *dirState, t_string16 fil
 }
 
 internal void win32_directory_scan(t_directory_state* dirState) {
+  
   assert(dirState->dirPath.ptr);
   assert(dirState->dirSearchPath.ptr);
   
@@ -325,14 +335,15 @@ internal void win32_directory_scan(t_directory_state* dirState) {
     loop {
       bool isLastFile = (it->next == it);
       t_file *itNext = it->next;
+      
       if(!it->found) {
         win32_directory_file_remove(dirState, it);
-        if(isLastFile) {
-          dirState->file = 0;
-          break;
-        }
+        if(isLastFile) {break;}
       }
-      it->found = false;
+      else {
+        it->found = false;
+      }
+      
       it = itNext;
       if(it == dirState->file) {break;}
     }
@@ -340,4 +351,5 @@ internal void win32_directory_scan(t_directory_state* dirState) {
   
   win32_set_current_file(dirState, dirState->file);
   win32_cache_update(dirState);
+  
 }

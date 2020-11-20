@@ -2,7 +2,7 @@
 
 REM DEBUG OR RELEASE
 set debug=-Z7 -Zf -Od -MTd -DMODE_DEBUG
-set release=-O2 -MT
+set release=-O2 -MT	
 
 REM ================
 REM PROJECT SETTINGS

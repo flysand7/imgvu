@@ -2,6 +2,7 @@
 struct t_directory_state_s;
 
 internal void platform_directory_set(t_directory_state* dirState, t_string16 path) {
+  
   if(!string16_compare(path, dirState->dirPath)) {
     win32_directory_free_files(dirState);
     
@@ -9,6 +10,7 @@ internal void platform_directory_set(t_directory_state* dirState, t_string16 pat
     if(dirState->dirPath.ptr) free(dirState->dirPath.ptr);
     
     dirState->dirPath = path;
+    
     dirState->dirSearchPath = win32_make_path_wildcard_mem(dirState->dirPath);
     win32_directory_scan(dirState);
   }

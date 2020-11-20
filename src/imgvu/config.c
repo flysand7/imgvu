@@ -428,7 +428,6 @@ internal r64 token_parse_float(t_token* token) {
   return(sign*result*divisor);
 }
 
-
 internal t_string token_parse_string(t_token* token) {
   char* c = token->start;
   u32 index = 0;
@@ -436,7 +435,7 @@ internal t_string token_parse_string(t_token* token) {
   assert(token->len >= 2);
   t_string string;
   string.len = token->len - 2;
-  string.ptr = malloc((string.len - 1) * sizeof(char));
+  string.ptr = malloc((string.len + 1) * sizeof(char));
   string.ptr[string.len] = 0;
   
   index = 1;

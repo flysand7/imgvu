@@ -145,7 +145,6 @@ int main(void)
   }
   
   t_directory_state directoryState = {0};
-  directoryState.changed = true;
   {
     t_string16 watchDir = win32_get_path_mem(fileToOpen);
     platform_directory_set(&directoryState, watchDir);
@@ -181,6 +180,7 @@ int main(void)
       }
       if(!g_running) break;
     }
+    
     
     bool stop = app_update(&g_app_state, &directoryState, &g_app_input, dt);
     if(stop) break;

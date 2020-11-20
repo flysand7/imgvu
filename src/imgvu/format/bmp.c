@@ -525,11 +525,12 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
   image.success = true;
   return(image);
   error:
+  image.success = false;
   return(image);
 }
 
 internal void try_parse_bmp(t_file_data* file, t_image* result) {
-  if(result->success) return;
+  if(result->success) {return;}
   debug_variable_unused(file);
   
   t_stream stream = stream_from_file_data(file);
@@ -561,12 +562,15 @@ internal void try_parse_bmp(t_file_data* file, t_image* result) {
     if(!result->success || (dataStream.error == true)) {goto error;}
   }
   
+  result->success = true;
   return;
   
   error:
   result->success = false;
-  if(result->pixels) free(result->pixels);
-  result->pixels = 0;
+  if(result->pixels != 0) {
+    result->pixels = 0;
+    free(result->pixels);
+  }
   result->width = 0;
   result->height = 0;
 }
