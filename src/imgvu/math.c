@@ -1,7 +1,7 @@
 #define PI32 3.1415926535f
 
 #define implies(a,b) (!(a) && (b))
-#define iff(a,b) ((a)==(b)))
+#define iff(a,b) ((a)==(b))
 
 #include<math.h>
 
@@ -11,6 +11,10 @@ internal inline i32 floor32(r32 a) {
 
 internal inline i32 ceil32(r32 a) {
   return((i32)(ceilf(a)));
+}
+
+internal inline i32 round32(r32 a) {
+  return((i32)(roundf(a)));
 }
 
 internal inline r32 sin32(r32 angle) {

@@ -101,7 +101,9 @@ internal void gdi_draw_image(t_location* loc, t_image* image) {
       i32 intPixelX = (i32)reversePosition.x;
       i32 intPixelY = (i32)reversePosition.y;
       if(intPixelX >= 0 && intPixelY >= 0 && intPixelX < width && intPixelY < height) {
-        g_window.pixels[column + row*g_window.clientWidth] = image->pixels[intPixelX + intPixelY * width];
+        t_colorf imagePixel = image->pixels[intPixelX + intPixelY * width];
+        u32 color = colorf_to_rgba(imagePixel);
+        g_window.pixels[column + row*g_window.clientWidth] = color;
       }
     }
   }
@@ -140,8 +142,15 @@ internal void gl_draw_image(t_location* loc, t_image* image) {
   glBindTexture(GL_TEXTURE_2D, texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (i32)image->width, (i32)image->height, 
-               0, GL_RGBA, GL_UNSIGNED_BYTE, image->pixels);
+  {
+    u32* temp = (u32*)malloc(image->width * image->height * sizeof(u32));
+    for(u32 pixelIndex = 0; pixelIndex < image->width*image->height; pixelIndex += 1) {
+      temp[pixelIndex] = colorf_to_rgba(image->pixels[pixelIndex]);
+    }
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (i32)image->width, (i32)image->height, 
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, (u32*)temp);
+    free(temp);
+  }
   
   glViewport(0, 0, (i32)g_window.clientWidth, (i32)g_window.clientHeight);
   glLoadIdentity();

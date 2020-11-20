@@ -38,7 +38,7 @@ struct {
   u32 imageSize;
   
   u32 colorsUsed;
-  u32* palette;
+  byte* palette;
   
   u32 redMask;
   u32 greenMask;
@@ -202,7 +202,7 @@ internal inline void bitmap_load_headers(t_bmp_data* data, t_stream* stream) {
   data->palette = 0;
   u32 paletteOffset = stream->offset;
   if(paletteOffset > stream->size) {stream->error = true;}
-  else {data->palette = (u32*)(void*)(stream->start + paletteOffset);}
+  else {data->palette = stream->start + paletteOffset;}
   stream_offset(stream, data->dataOffset);
 }
 
@@ -230,12 +230,12 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
   t_image image;
   image.width = bmp->bitmapWidth;
   image.height = bmp->bitmapHeight;
-  image.pixels = (u32*)malloc(bmp->bitmapWidth * bmp->bitmapHeight * sizeof(u32));
+  image.pixels = (t_colorf*)malloc(bmp->bitmapWidth * bmp->bitmapHeight * sizeof(t_colorf));
   
   // NOTE(bumbread): initializing pixels to black because in the case of RLE compression
   // not every pixel will be overwritten.
   for(u32 index = 0; index < image.height*image.width; index += 1) {
-    image.pixels[index] = 0x00000000;
+    image.pixels[index] = color_black;
   }
   
   if(bmp->bitsPerPixel == 1) {
@@ -249,8 +249,12 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
       currentBit -= 1;
       u32 value = 1&(currentByte >> currentBit);
       // TODO(bumbread): out of bounds checking
-      u32 color = bmp->palette[value];
-      image.pixels[rowCounter*image.width + colCounter] = color;
+      u32 blue = bmp->palette[4*value + 0];
+      u32 green = bmp->palette[4*value + 1];
+      u32 red = bmp->palette[4*value + 2];
+      u32 alpha = 0xff;
+      t_colorf pixel = bytes_to_colorf(red, green, blue, alpha);
+      image.pixels[rowCounter*image.width + colCounter] = pixel;
       if(currentBit == 0) {
         currentBit = 8;
         currentByte = stream_read_byte(&data);
@@ -301,7 +305,17 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
               u32 value = stream_read_byte(&data);
               u32 value_1 = (value >> 4)&0xf;
               u32 value_2 = (value >> 0)&0xf;
-              u32 colors[2] = { bmp->palette[value_1], bmp->palette[value_2]};
+              t_colorf colors[2];
+              u32 r = bmp->palette[4*value_1 + 0];
+              u32 g = bmp->palette[4*value_1 + 1];
+              u32 b = bmp->palette[4*value_1 + 2]; // TODO(bumbread): support alpha in bitmaps?
+              u32 a = 0xff;
+              colors[0] = bytes_to_colorf(r,g,b,a);
+              r = bmp->palette[4*value_2 + 0];
+              g = bmp->palette[4*value_2 + 1];
+              b = bmp->palette[4*value_2 + 2];
+              a = 0xff;
+              colors[1] = bytes_to_colorf(r,g,b,a);
               for(u32 _=0;_<2;_+=1) {
                 image.pixels[colCounter + rowCounter*image.width] = colors[_];
                 colCounter += 1;
@@ -318,7 +332,17 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           u32 value = stream_read_byte(&data);
           u32 value_1 = (value >> 4)&0xf;
           u32 value_2 = (value >> 0)&0xf;
-          u32 colors[2] = { bmp->palette[value_1], bmp->palette[value_2]};
+          t_colorf colors[2];
+          u32 r = bmp->palette[4*value_1 + 0];
+          u32 g = bmp->palette[4*value_1 + 1];
+          u32 b = bmp->palette[4*value_1 + 2]; // TODO(bumbread): support alpha in bitmaps?
+          u32 a = 0xff;
+          colors[0] = bytes_to_colorf(r,g,b,a);
+          r = bmp->palette[4*value_2 + 0];
+          g = bmp->palette[4*value_2 + 1];
+          b = bmp->palette[4*value_2 + 2];
+          a = 0xff;
+          colors[1] = bytes_to_colorf(r,g,b,a);
           for(u32 count = 0; count < repeatCount; count += 1) {
             image.pixels[colCounter + rowCounter*image.width] = colors[count%2];
             colCounter += 1;
@@ -341,7 +365,11 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
         order -= 1;
         u32 value = 0xf&(currentByte>>order);
         // TODO(bumbread): out of bounds check
-        u32 color = bmp->palette[value];
+        u32 b = bmp->palette[4*value + 0];
+        u32 g = bmp->palette[4*value + 1];
+        u32 r = bmp->palette[4*value + 2];
+        u32 a = 0xff;
+        t_colorf color = bytes_to_colorf(r,g,b,a);
         image.pixels[colCounter + rowCounter*image.width] = color;
         if(order == 0) {
           order = 2;
@@ -391,7 +419,11 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           if(colCounter == image.width) {goto error;}
           for(u32 count = 0; count < currentByte; count += 1) {
             u32 value = stream_read_byte(&data);
-            u32 color = bmp->palette[value];
+            u32 b = bmp->palette[4*value + 0];
+            u32 g = bmp->palette[4*value + 1];
+            u32 r = bmp->palette[4*value + 2];
+            u32 a = 0xff;
+            t_colorf color = bytes_to_colorf(r,g,b,a);
             image.pixels[colCounter + rowCounter*image.width] = color;
             colCounter += 1;
             if(colCounter == image.width) {
@@ -405,7 +437,11 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
         if(colCounter == image.width) {goto error;}
         u32 repeatCount = currentByte;
         u32 value = stream_read_byte(&data);
-        u32 color = bmp->palette[value];
+        u32 b = bmp->palette[4*value + 0];
+        u32 g = bmp->palette[4*value + 1];
+        u32 r = bmp->palette[4*value + 2];
+        u32 a = 0xff;
+        t_colorf color = bytes_to_colorf(r,g,b,a);
         for(u32 count = 0; count < repeatCount; count += 1) {
           image.pixels[colCounter + rowCounter*image.width] = color;
           colCounter += 1;
@@ -423,8 +459,12 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
       u32 colCounter = 0;
       u32 rowCounter = 0;
       loop {
-        u32 nextByte = (u32)stream_read_byte(&data);
-        u32 color = (nextByte) | (nextByte << 8) | (nextByte << 16) | (0xffu << 24);
+        u32 value = (u32)stream_read_byte(&data);
+        u32 b = bmp->palette[4*value + 0];
+        u32 g = bmp->palette[4*value + 1];
+        u32 r = bmp->palette[4*value + 2];
+        u32 a = 0xff;
+        t_colorf color = bytes_to_colorf(r,g,b,a);
         image.pixels[rowCounter*image.width + colCounter] = color;
         colCounter += 1;
         if(colCounter == image.width) {
@@ -450,7 +490,8 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
       u32 red = get_sample_from_mask(nextWord << 16, bmp->redMask);
       u32 blue = get_sample_from_mask(nextWord << 16, bmp->blueMask);
       u32 green = get_sample_from_mask(nextWord << 16, bmp->greenMask);
-      u32 color = (red) | (green << 8) | (blue << 16) | (0xffu << 24);
+      u32 alpha = 0xff;
+      t_colorf color = bytes_to_colorf(red,green,blue,alpha);
       image.pixels[rowCounter*image.width + colCounter] = color;
       colCounter += 1;
       if(colCounter == image.width) {
@@ -474,7 +515,7 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
       u32 blue = stream_read_byte(&data);
       u32 green = stream_read_byte(&data);
       u32 red = stream_read_byte(&data);
-      u32 color = (red) | (green << 8) | (blue << 16) | (0xffu << 24);
+      t_colorf color = bytes_to_colorf(red,green,blue,0xffu);
       image.pixels[rowCounter*image.width + colCounter] = color;
       colCounter += 1;
       if(colCounter == image.width) {
@@ -500,8 +541,8 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
       u32 green = get_sample_from_mask(color, bmp->greenMask);
       u32 blue = get_sample_from_mask(color, bmp->blueMask);
       u32 alpha = get_sample_from_mask(color, bmp->alphaMask);
-      color = (red) | (green << 8) | (blue << 16) | (alpha << 24);
-      image.pixels[rowCounter*image.width + colCounter] = color;
+      t_colorf pixel = bytes_to_colorf(red, green, blue, alpha);
+      image.pixels[rowCounter*image.width + colCounter] = pixel;
       colCounter += 1;
       if(colCounter == image.width) {
         colCounter = 0;

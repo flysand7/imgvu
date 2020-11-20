@@ -39,6 +39,7 @@ wchar_t typedef char16;
 
 #include"string.c"
 #include"math.c"
+#include"color.c"
 
 struct {
   bool prevImage;
@@ -57,7 +58,7 @@ struct {
   bool success;
   u32 width;
   u32 height;
-  u32* pixels;
+  t_colorf* pixels;
 } typedef t_image;
 
 struct {
@@ -88,7 +89,6 @@ internal t_string16 platform_get_config_filename(void);
 
 #include"config.c"
 #include"stream.c"
-#include"color.c"
 #include"format/bmp.c"
 #include"format/pnm.c"
 

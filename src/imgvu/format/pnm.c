@@ -89,8 +89,8 @@ internal void try_parse_pnm(t_file_data* data, t_image* result) {
         
         result->width = width;
         result->height = height;
-        result->pixels = malloc(result->width*result->height * sizeof(u32));
-        u32* pixels = result->pixels;
+        result->pixels = malloc(result->width*result->height * sizeof(t_colorf));
+        t_colorf* pixels = result->pixels;
         
         if(isPixelAscii) {
           for(u32 row = height-1;; row -= 1) {
@@ -106,7 +106,7 @@ internal void try_parse_pnm(t_file_data* data, t_image* result) {
               u32 g = (y*0xff) / range;
               u32 b = (z*0xff) / range;
               
-              u32 color = r | (g << 8) | (b << 16) | (0xff000000);
+              t_colorf color = bytes_to_colorf(r,g,b,0xffu);
               pixels[column + row * width] = color;
             }
             if(row == 0) break;
@@ -127,7 +127,7 @@ internal void try_parse_pnm(t_file_data* data, t_image* result) {
               u32 b = stream.ptr[stream.pos+2];
               stream.pos += 3;
               
-              u32 color = r | (g << 8) | (b << 16) | (0xff000000);
+              t_colorf color = bytes_to_colorf(r,g,b,0xffu);
               pixels[column + row * width] = color;
             }
             if(row == 0) break;
@@ -145,7 +145,7 @@ internal void try_parse_pnm(t_file_data* data, t_image* result) {
               if(v > range) goto error;
               
               u32 g = (v*0xff) / range;
-              u32 color = g | (g << 8) | (g << 16) | (0xff000000);
+              t_colorf color = bytes_to_colorf(g,g,g,0xffu);
               pixels[column + row * width] = color;
             }
             if(row == 0) break;
@@ -166,7 +166,7 @@ internal void try_parse_pnm(t_file_data* data, t_image* result) {
               stream.pos += 1;
               
               u32 g = (v*0xff) / range;
-              u32 color = g | (g << 8) | (g << 16) | (0xff000000);
+              t_colorf color = bytes_to_colorf(g,g,g,0xffu);
               pixels[column + row * width] = color;
             }
             if(row == 0) break;
@@ -184,8 +184,8 @@ internal void try_parse_pnm(t_file_data* data, t_image* result) {
         
         result->width = width;
         result->height = height;
-        result->pixels = malloc(result->width*result->height * sizeof(u32));
-        u32* pixels = result->pixels;
+        result->pixels = malloc(result->width*result->height * sizeof(t_colorf));
+        t_colorf* pixels = result->pixels;
         
         u32 columnCounter = 0;
         u32 rowCounter = height-1;
@@ -195,7 +195,7 @@ internal void try_parse_pnm(t_file_data* data, t_image* result) {
             if(stream.pos + 1 > stream.size) goto error;
             byte character = stream.ptr[stream.pos];
             if(character == '0' || character == '1') {
-              u32 color = ((character == '1')?(0xff000000):(0xffffffff));
+              t_colorf color = ((character == '1')?(color_black):(color_black));
               pixels[columnCounter + rowCounter * result->width] = color;
               columnCounter += 1;
               if(columnCounter == width) {
@@ -232,7 +232,7 @@ internal void try_parse_pnm(t_file_data* data, t_image* result) {
             if(stream.pos >= stream.size) goto error;
             u32 lastByte = stream.ptr[stream.pos];
             u32 currentBit = (lastByte >> bitCounter) & 1;
-            u32 color = (currentBit == 1) ? (0xff000000) : (0xffffffff);
+            t_colorf color = (currentBit == 1) ? (color_black) : (color_white);
             pixels[columnCounter + rowCounter * result->width] = color;
             
             columnCounter += 1;
