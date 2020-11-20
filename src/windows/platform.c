@@ -3,7 +3,7 @@ struct t_directory_state_s;
 
 internal void platform_directory_set(t_directory_state* dirState, t_string16 path) {
   if(!string16_compare(path, dirState->dirPath)) {
-    win32_directory_clear(dirState);
+    win32_directory_free_files(dirState);
     
     if(dirState->dirSearchPath.ptr) free(dirState->dirSearchPath.ptr);
     if(dirState->dirPath.ptr) free(dirState->dirPath.ptr);
@@ -11,36 +11,26 @@ internal void platform_directory_set(t_directory_state* dirState, t_string16 pat
     dirState->dirPath = path;
     dirState->dirSearchPath = win32_make_path_wildcard_mem(dirState->dirPath);
     win32_directory_scan(dirState);
+    
+    dirState->currentFile = dirState->file;
   }
 }
 
 internal void platform_directory_next_file(t_directory_state* dirState) {
-  if(dirState->fileCount != 0) {
-    u32 newFileIndex = (dirState->currentFile+1) % dirState->fileCount;
-    if(newFileIndex != dirState->currentFile) {
-      win32_cache_update(dirState);
-      dirState->currentFile = newFileIndex;
-      dirState->changed = true;
-    }
+  if(dirState->file != 0) {
+    dirState->currentFile = dirState->currentFile->next;
   }
 }
 
 internal void platform_directory_previous_file(t_directory_state* dirState) {
-  if(dirState->fileCount != 0) {
-    u32 newFileIndex = dirState->currentFile;
-    if(newFileIndex == 0) newFileIndex += dirState->fileCount;
-    newFileIndex -= 1;
-    if(newFileIndex != dirState->currentFile) {
-      win32_cache_update(dirState);
-      dirState->currentFile = newFileIndex;
-      dirState->changed = true;
-    }
+  if(dirState->file != 0) {
+    dirState->currentFile = dirState->currentFile->prev;
   }
 }
 
 internal t_image* platform_get_current_image(t_directory_state* dirState) {
-  if(dirState->fileCount != 0) {
-    t_file* file = (dirState->files + dirState->currentFile);
+  if(dirState->file != 0) {
+    t_file* file = dirState->currentFile;
     if(file->image.pixels != 0) {
       return(&file->image);
     }
@@ -115,15 +105,16 @@ internal t_file_data platform_load_file(t_string16 fullFilename) {
     bool result = GetFileSizeEx(fileHandle, &fileSize);
     assert(result);
     if(fileSize.LowPart != 0) {
-      fileData.ptr = malloc((u32)fileSize.LowPart);
+      byte *bytes = malloc((u32)fileSize.LowPart);
       DWORD bytesRead = 0;
       
-      result = ReadFile(fileHandle, fileData.ptr, fileSize.LowPart, &bytesRead, 0);
+      result = ReadFile(fileHandle, bytes, fileSize.LowPart, &bytesRead, 0);
       assert(result);
       CloseHandle(fileHandle);
       assert((DWORD)fileSize.LowPart == bytesRead);
       
       fileData.size = (u32)fileSize.LowPart;
+      fileData.ptr = bytes;
     }
   }
   

@@ -189,8 +189,8 @@ int main(void)
       directoryState.changed = false;
       bool fileExists = false;
       
-      if(directoryState.fileCount != 0) {
-        t_string16 currentFilename = directoryState.files[directoryState.currentFile].data.filename;
+      if(directoryState.file != 0) {
+        t_string16 currentFilename = directoryState.file->data.filename;
         if(currentFilename.ptr != 0) {
           SetWindowTextW(g_window.handle, (LPCWSTR)currentFilename.ptr);
           fileExists = true;
