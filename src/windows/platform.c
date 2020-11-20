@@ -11,8 +11,6 @@ internal void platform_directory_set(t_directory_state* dirState, t_string16 pat
     dirState->dirPath = path;
     dirState->dirSearchPath = win32_make_path_wildcard_mem(dirState->dirPath);
     win32_directory_scan(dirState);
-    
-    dirState->currentFile = dirState->file;
   }
 }
 

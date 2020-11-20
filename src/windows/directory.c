@@ -171,6 +171,9 @@ internal void win32_cache_update(t_directory_state *dirState) {
       break;
     }
     
+    t_file *rightAdvanceTo = right->next;
+    t_file *leftAdvanceTo = left->prev;
+    
     if(distance <= max_cache_distance_loaded) {
       if(left->cached == false)  {
         win32_load_cache_file(left);
@@ -198,8 +201,8 @@ internal void win32_cache_update(t_directory_state *dirState) {
       if(right->cached) {win32_file_uncache(right);}
     }
     
-    right = right->next;
-    left = left->prev;
+    right = rightAdvanceTo;
+    left = leftAdvanceTo;
   }
 }
 
@@ -290,6 +293,7 @@ internal void win32_directory_scan(t_directory_state* dirState) {
   if(it != 0) {
     loop {
       bool isLastFile = (it->next == it);
+      t_file *itNext = it->next;
       if(!it->found) {
         win32_directory_file_remove(dirState, it);
         if(isLastFile) {
@@ -298,10 +302,11 @@ internal void win32_directory_scan(t_directory_state* dirState) {
         }
       }
       it->found = false;
-      it = it->next;
+      it = itNext;
       if(it == dirState->file) {break;}
     }
   }
   
+  dirState->currentFile = dirState->file;
   win32_cache_update(dirState);
 }
