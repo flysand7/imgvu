@@ -15,10 +15,12 @@ internal void platform_directory_set(t_directory_state* dirState, t_string16 pat
 }
 
 internal void platform_directory_next_file(t_directory_state* dirState) {
+  profile_block_start(next_file);
   if(dirState->currentFile != 0) {
     win32_set_current_file(dirState, dirState->currentFile->next);
     win32_cache_update(dirState);
   }
+  profile_block_end(next_file);
 }
 
 internal void platform_directory_previous_file(t_directory_state* dirState) {

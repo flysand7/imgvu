@@ -98,9 +98,6 @@ struct {
 
 internal bool app_update(t_app_state* appState, struct t_directory_state_s* state, t_app_input* input, r32 dt);
 internal void app_draw(t_app_state* state);
-
-// NOTE(bumbread): the application interface realisation
-
-#include"main.c"
+internal t_image app_decode_file(t_file_data data);
 
 #endif // IMGVU_H

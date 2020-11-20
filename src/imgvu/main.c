@@ -16,6 +16,7 @@ internal t_image app_decode_file(t_file_data data) {
 }
 
 internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirState, t_app_input* input, r32 dt) {
+  profile_block_start(app_upd);
   if(!appState->initialized) {
     app_load_config(&app_config, platform_get_config_filename());
     platform_chose_graphics_provider(app_config.graphicsProvider);
@@ -46,11 +47,12 @@ internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirS
     }
   }
   
+  profile_block_end(app_upd);
   return(false);
 }
 
 internal void app_draw(t_app_state* appState) {
-  
+  profile_block_start(app_drw);
   if(app_config.colorCycle.ptr) {
     u32 color = (u32)app_config.colorCycle.ptr[app_config.backgroundColor];
     platform_clear_screen(color);
@@ -64,4 +66,5 @@ internal void app_draw(t_app_state* appState) {
   }
   
   platform_show();
+  profile_block_end(app_drw);
 }

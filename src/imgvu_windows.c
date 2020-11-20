@@ -44,6 +44,8 @@ resize_window(t_window* window, u32 newClientWidth, u32 newClientHeight) {
 #include"windows/filesystem.c"
 #include"windows/directory.c"
 
+#include"imgvu/main.c"
+
 enum {GRAPHICS_GL, GRAPHICS_GDI} typedef t_graphics_provider;
 
 global bool g_running;
