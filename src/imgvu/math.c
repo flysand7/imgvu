@@ -1,7 +1,7 @@
 #define PI32 3.1415926535f
 
 #define implies(a,b) (!(a) && (b))
-#define iff(a,b) (((a)&&(b)) || (!(a) && !(b)))
+#define iff(a,b) ((a)==(b)))
 
 #include<math.h>
 
