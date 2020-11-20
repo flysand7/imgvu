@@ -171,7 +171,6 @@ internal bool win32_load_cache_file(t_file *file) {
 // into the cache, unload the files that should not be in the cache
 // out of the cache.
 internal void win32_cache_update(t_directory_state *dirState) {
-  
   t_file *file = dirState->currentFile;
   if(file == 0) return;
   
@@ -210,38 +209,49 @@ internal void win32_cache_update(t_directory_state *dirState) {
       break;
     }
     
-    t_file *rightAdvanceTo = right->next;
-    t_file *leftAdvanceTo = left->prev;
-    
-    if(distance <= max_cache_distance_loaded) {
+    if(left != right) {
+      t_file *rightAdvanceTo = right->next;
+      t_file *leftAdvanceTo = left->prev;
+      
+      if(distance <= max_cache_distance_loaded) {
+        if(left->cached == false)  {
+          win32_load_cache_file(left);
+          if(left->cached == false) {
+            bool isLastFile = (left->next == left);
+            win32_directory_file_remove(dirState, left);
+            if(isLastFile) { 
+              break;
+            }
+          }
+        }
+        if(right->cached == false) {
+          win32_load_cache_file(right);
+          if(right->cached == false) {
+            bool isLastFile = (left->next == left);
+            win32_directory_file_remove(dirState, right);
+            if(isLastFile) { 
+              break;
+            }
+          }
+        }
+      }
+      else {
+        if(left->cached)  {win32_file_uncache(left);}
+        if(right->cached) {win32_file_uncache(right);}
+      }
+      
+      right = rightAdvanceTo;
+      left = leftAdvanceTo;
+    }
+    else { //left == right
       if(left->cached == false)  {
         win32_load_cache_file(left);
         if(left->cached == false) {
-          bool isLastFile = (left->next == left);
           win32_directory_file_remove(dirState, left);
-          if(isLastFile) { 
-            break;
-          }
         }
       }
-      if(right->cached == false) {
-        win32_load_cache_file(right);
-        if(right->cached == false) {
-          bool isLastFile = (left->next == left);
-          win32_directory_file_remove(dirState, right);
-          if(isLastFile) { 
-            break;
-          }
-        }
-      }
+      break;
     }
-    else {
-      if(left->cached)  {win32_file_uncache(left);}
-      if(right->cached) {win32_file_uncache(right);}
-    }
-    
-    right = rightAdvanceTo;
-    left = leftAdvanceTo;
   }
 }
 
