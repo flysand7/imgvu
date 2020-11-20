@@ -7,6 +7,8 @@ internal t_image app_decode_file(t_file_data data) {
   result.success = false;
   try_parse_pnm(&data, &result);
   try_parse_bmp(&data, &result);
+  
+  assert( iff(result.pixels != 0, result.success == true) );
   return(result);
 }
 
