@@ -15,21 +15,21 @@ internal void platform_directory_set(t_directory_state* dirState, t_string16 pat
 }
 
 internal void platform_directory_next_file(t_directory_state* dirState) {
-  if(dirState->file != 0) {
+  if(dirState->currentFile != 0) {
     dirState->currentFile = dirState->currentFile->next;
     win32_cache_update(dirState);
   }
 }
 
 internal void platform_directory_previous_file(t_directory_state* dirState) {
-  if(dirState->file != 0) {
+  if(dirState->currentFile != 0) {
     dirState->currentFile = dirState->currentFile->prev;
     win32_cache_update(dirState);
   }
 }
 
 internal t_image* platform_get_current_image(t_directory_state* dirState) {
-  if(dirState->file != 0) {
+  if(dirState->currentFile != 0) {
     t_file* file = dirState->currentFile;
     if(file->image.pixels != 0) {
       return(&file->image);
