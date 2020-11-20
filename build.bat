@@ -9,9 +9,9 @@ set output_file_name=imgvu
 del %output_file_name%.exe 2> nul
 del %output_file_name%.pdb 2> nul
 
-if %compiler% == clang (echo compiling with clang... & call build\clang.bat)^
-else if %compiler% == msvc (echo compiling with msvc... & call build\msvc.bat)^
-else if %compiler% == tcc (echo compiling with tcc... & call build\tcc-c.bat)
+if %compiler% == clang (echo compiling with clang... & call build\compile-clang.bat)^
+else if %compiler% == msvc (echo compiling with msvc... & call build\compile-msvc.bat)^
+else if %compiler% == tcc (echo compiling with tcc... & call build\compile-tcc.bat)
 
 del *.ilk 2> nul
 del *.obj 2> nul
