@@ -87,6 +87,7 @@ internal t_file_data platform_load_file(t_string16 fullFilename);
 internal bool platform_write_file(t_file_data file);
 internal t_string16 platform_get_config_filename(void);
 
+#include<stdio.h>
 #include"config.c"
 #include"stream.c"
 #include"format/bmp.c"

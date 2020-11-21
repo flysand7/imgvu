@@ -592,6 +592,7 @@ internal void try_parse_bmp(t_file_data* file, t_image* result) {
     bitmap_load_headers(&bitmapData, &stream);
     if(stream.error) {goto error;}
     
+    
     t_stream dataStream;
     dataStream.error = false;
     dataStream.start = (byte*)file->ptr;

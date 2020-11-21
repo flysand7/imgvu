@@ -10,6 +10,7 @@ internal inline t_stream stream_from_file_data(t_file_data* file) {
   t_stream result;
   result.error = false;
   result.start = file->ptr;
+  result.offset = 0;
   result.size = (u32)file->size;
   return(result);
 }
@@ -55,7 +56,7 @@ internal inline void* stream_read(t_stream* stream, u32 size) {
   if(!stream->error) {
     if(stream->offset + size <= stream->size) {
       byte* oldPointer = stream->start + stream->offset;
-      stream->offset += size;
+      stream->offset = stream->offset + size;
       return(oldPointer);
     }
     stream->error = true;
