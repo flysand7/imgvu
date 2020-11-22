@@ -354,14 +354,14 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
       }
     }
     else {
-      if(stream_can_read_size(&data, bmp->imageSize)) {goto error;}
+      if(stream_can_read_size(&data, bmp->imageSize) == false) {goto error;}
       
       u32 rowCounter = 0;
       u32 colCounter = 0;
       byte currentByte = stream_read_byte(&data);
       u32 order = 2;
       loop {
-        stream_align(&data, 2);
+        //stream_align(&data, 2);
         order -= 1;
         u32 value = 0xf&(currentByte>>order);
         // TODO(bumbread): out of bounds check
@@ -604,7 +604,6 @@ internal void try_parse_bmp(t_file_data* file, t_image* result) {
   if(!result->success || (dataStream.error == true)) {goto error;}
   
   result->success = true;
-  
   
   goto end;
   error:
