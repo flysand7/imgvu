@@ -578,37 +578,35 @@ internal void try_parse_bmp(t_file_data* file, t_image* result) {
   t_stream stream = stream_from_file_data(file);
   t_bmp_data bitmapData = {0};
   
-  if(stream_read_u16_le(&stream) == BMP_FIRST_WORD) {
-    u32 fileSize = stream_read_u32_le(&stream);
-    stream_read_u32_le(&stream);
-    u32 dataOffset = stream_read_u32_le(&stream);
-    
-    if(stream.error || (fileSize != file->size) 
-       || (stream_is_pointer_within(&stream, dataOffset) == false)) {
-      goto error;
-    }
-    
-    bitmapData.fileSize = fileSize;
-    bitmapData.dataOffset = dataOffset;
-    
-    bitmap_load_headers(&bitmapData, &stream);
-    if(stream.error) {goto error;}
-    
-    t_stream dataStream;
-    dataStream.error = false;
-    dataStream.start = (byte*)file->ptr;
-    dataStream.size = (u32)file->size;
-    stream_offset(&dataStream, bitmapData.dataOffset);
-    
-    *result = bmp_load_data(&bitmapData, dataStream);
-    if(!result->success || (dataStream.error == true)) {goto error;}
+  if(stream_read_u16_le(&stream) != BMP_FIRST_WORD) {goto error;}
+  u32 fileSize = stream_read_u32_le(&stream);
+  stream_read_u32_le(&stream);
+  u32 dataOffset = stream_read_u32_le(&stream);
+  
+  if(stream.error || (fileSize != file->size) 
+     || (stream_is_pointer_within(&stream, dataOffset) == false)) {
+    goto error;
   }
+  
+  bitmapData.fileSize = fileSize;
+  bitmapData.dataOffset = dataOffset;
+  
+  bitmap_load_headers(&bitmapData, &stream);
+  if(stream.error) {goto error;}
+  
+  t_stream dataStream;
+  dataStream.error = false;
+  dataStream.start = (byte*)file->ptr;
+  dataStream.size = (u32)file->size;
+  stream_offset(&dataStream, bitmapData.dataOffset);
+  
+  *result = bmp_load_data(&bitmapData, dataStream);
+  if(!result->success || (dataStream.error == true)) {goto error;}
   
   result->success = true;
   
-  platform_profile_state_pop();
-  return;
   
+  goto end;
   error:
   result->success = false;
   if(result->pixels != 0) {
@@ -617,6 +615,10 @@ internal void try_parse_bmp(t_file_data* file, t_image* result) {
   }
   result->width = 0;
   result->height = 0;
+  
+  end:
+  platform_profile_state_pop();
+  return;
 }
 
 #endif //BMP_H
