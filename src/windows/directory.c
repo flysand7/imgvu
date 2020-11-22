@@ -189,6 +189,7 @@ internal void win32_cache_update(t_directory_state *dirState) {
           break;
         }
       }
+      else {exit = true;}
     }
     
     if(exit) {break;}
@@ -242,6 +243,7 @@ internal void win32_cache_update(t_directory_state *dirState) {
       
       right = rightAdvanceTo;
       left = leftAdvanceTo;
+      distance += 1;
     }
     else { //left == right
       if(left->cached == false)  {
