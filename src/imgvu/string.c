@@ -1,7 +1,4 @@
 
-struct { u32 len; char16* ptr; } typedef t_string16;
-struct { u32 len; char* ptr; } typedef t_string;
-
 #define static_make_string16(nm, str) t_string16 nm; nm.ptr=(str); nm.len=sizeof(str)/sizeof(char16) - 1
 #define static_make_string(nm, str) t_string nm; nm.ptr=(str); nm.len=sizeof(str)/sizeof(char) - 1
 

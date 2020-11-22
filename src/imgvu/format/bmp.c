@@ -570,6 +570,8 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
 }
 
 internal void try_parse_bmp(t_file_data* file, t_image* result) {
+  platform_profile_state_push("bmp_parse");
+  
   if(result->success) {return;}
   debug_variable_unused(file);
   
@@ -592,7 +594,6 @@ internal void try_parse_bmp(t_file_data* file, t_image* result) {
     bitmap_load_headers(&bitmapData, &stream);
     if(stream.error) {goto error;}
     
-    
     t_stream dataStream;
     dataStream.error = false;
     dataStream.start = (byte*)file->ptr;
@@ -604,6 +605,8 @@ internal void try_parse_bmp(t_file_data* file, t_image* result) {
   }
   
   result->success = true;
+  
+  platform_profile_state_pop();
   return;
   
   error:

@@ -1,9 +1,22 @@
 
 #pragma warning(push, 1)
+#include<stdio.h>
 #include<stdlib.h>
+#include<stdint.h>
 #pragma warning(pop)
 
-#include"imgvu/imgvu.h"
+#include"imgvu/types.c"
+#include"imgvu/math.c"
+#include"imgvu/string.c"
+#include"imgvu/color.c"
+#include"imgvu/platform.c"
+
+#include"imgvu/stream.c"
+#include"imgvu/config.c"
+#include"imgvu/format/bmp.c"
+#include"imgvu/format/pnm.c"
+
+#include"imgvu/main.c"
 
 // NOTE(bumbread): Windows.h produces shit ton of 
 // warnings starting /W4. I'm disabling them
@@ -40,11 +53,10 @@ resize_window(t_window* window, u32 newClientWidth, u32 newClientHeight) {
   }
 }
 
+#include<intrin.h>
 #include"windows/profiler.c"
 #include"windows/filesystem.c"
 #include"windows/directory.c"
-
-#include"imgvu/main.c"
 
 enum {GRAPHICS_GL, GRAPHICS_GDI} typedef t_graphics_provider;
 
@@ -133,7 +145,7 @@ internal t_string16 win32_get_full_path_from_args(void) {
 // TODO(bumbread): and also add fullscreen support, yeah!
 int main(void)
 {
-  clock_setup();
+  win_clock_setup();
   
   t_string16 fileToOpen = win32_get_full_path_from_args();
   
