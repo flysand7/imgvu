@@ -15,8 +15,9 @@ internal inline t_stream stream_from_file_data(t_file_data* file) {
   return(result);
 }
 
-internal inline void stream_rewind(t_stream* stream) {
+internal inline void stream_reset(t_stream* stream) {
   stream->offset = 0;
+  stream->error = false;
 }
 
 internal inline bool stream_is_pointer_within(t_stream* stream, u32 offset) {

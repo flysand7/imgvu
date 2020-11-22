@@ -4,7 +4,7 @@ if not defined use_asan set use_asan=0
 set use_asan_f=-fsanitize=address
 
 REM DEBUG OR RELEASE
-set debug=-Z7 -O2 -MT -DMODE_DEBUG
+set debug=-Z7 -Od -MT -DMODE_DEBUG
 set release=-O2 -MT
 
 REM ================
