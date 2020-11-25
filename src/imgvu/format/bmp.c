@@ -202,7 +202,7 @@ internal inline void bitmap_load_headers(t_bmp_data* data, t_stream* stream) {
   data->palette = 0;
   u32 paletteOffset = stream->offset;
   if(paletteOffset > stream->size) {stream->error = true;}
-  else if(paletteOffset > data->dataOffset) {stream->error = true;}
+  else if((paletteOffset + data->colorsUsed) > data->dataOffset) {stream->error = true;}
   else {data->palette = stream->start + paletteOffset;}
   stream_offset(stream, data->dataOffset);
 }
