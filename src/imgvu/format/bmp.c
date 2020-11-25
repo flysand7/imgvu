@@ -255,10 +255,6 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
       u32 alpha = 0xff;
       t_colorf pixel = bytes_to_colorf(red, green, blue, alpha);
       image.pixels[rowCounter*image.width + colCounter] = pixel;
-      if(currentBit == 0) {
-        currentBit = 8;
-        currentByte = stream_read_byte(&data);
-      }
       colCounter += 1;
       if(colCounter == image.width) {
         colCounter = 0;
@@ -267,9 +263,14 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
           rowCounter = 0;
           goto finish;
         }
-        assert(data.error == false);
         stream_align(&data, 4);
+        assert(data.error == false);
+        currentBit = 0;
+      }
+      
+      if(currentBit == 0) {
         currentBit = 8;
+        currentByte = stream_read_byte(&data);
       }
     }
   }
@@ -363,7 +364,7 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
       loop {
         //stream_align(&data, 2);
         order -= 1;
-        u32 value = 0xf&(currentByte>>order);
+        u32 value = 0xf&(currentByte>>(4*order));
         // TODO(bumbread): out of bounds check
         u32 b = bmp->palette[4*value + 0];
         u32 g = bmp->palette[4*value + 1];
@@ -371,10 +372,6 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
         u32 a = 0xff;
         t_colorf color = bytes_to_colorf(r,g,b,a);
         image.pixels[colCounter + rowCounter*image.width] = color;
-        if(order == 0) {
-          order = 2;
-          currentByte = stream_read_byte(&data);
-        }
         colCounter += 1;
         if(colCounter == bmp->bitmapWidth) {
           colCounter = 0;
@@ -384,8 +381,12 @@ internal t_image bmp_load_data(t_bmp_data* bmp, t_stream data) {
             goto finish;
           }
           stream_align(&data, 4);
-          order = 2;
           assert(data.error == false);
+          order = 0;
+        }
+        if(order == 0) {
+          order = 2;
+          currentByte = stream_read_byte(&data);
         }
       }
     }
