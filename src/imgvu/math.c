@@ -96,7 +96,16 @@ union {
   struct {v3 r,g,b;};
   struct {v3 x,y,z;};
   v3 v[3];
+  r32 m[9];
 } typedef m3;
+
+internal r32 determinant(m3 m) {
+  r32 rx =   m.g.y*m.b.z - m.b.y*m.g.z;
+  r32 ry = -(m.r.y*m.b.z - m.b.y*m.r.z);
+  r32 rz =   m.r.y*m.g.z - m.g.y*m.r.z;
+  r32 detm = (m.r.x*rx + m.g.x*ry + m.b.x*rz);
+  return(detm);
+}
 
 internal m3 inverse(m3 m) {
   m3 result;
@@ -126,5 +135,19 @@ internal inline v3 transform(m3 m, v3 p) {
   result.x = m.r.x*p.x + m.g.x*p.y + m.b.x*p.z;
   result.y = m.r.y*p.x + m.g.y*p.y + m.b.y*p.z;
   result.z = m.r.z*p.x + m.g.z*p.y + m.b.z*p.z;
+  return(result);
+}
+
+internal inline m3 multiply_m3(m3 a, m3 b) {
+  m3 result;
+  result.r.x = a.r.x*b.r.x + a.g.x*b.r.y + a.b.x*b.r.z;
+  result.r.y = a.r.y*b.r.x + a.g.y*b.r.y + a.b.y*b.r.z;
+  result.r.z = a.r.z*b.r.x + a.g.z*b.r.y + a.b.z*b.r.z;
+  result.g.x = a.r.x*b.g.x + a.g.x*b.g.y + a.b.x*b.g.z;
+  result.g.y = a.r.y*b.g.x + a.g.y*b.g.y + a.b.y*b.g.z;
+  result.g.z = a.r.z*b.g.x + a.g.z*b.g.y + a.b.z*b.g.z;
+  result.b.x = a.r.x*b.b.x + a.g.x*b.b.y + a.b.x*b.b.z;
+  result.b.y = a.r.y*b.b.x + a.g.y*b.b.y + a.b.y*b.b.z;
+  result.b.z = a.r.z*b.b.x + a.g.z*b.b.y + a.b.z*b.b.z;
   return(result);
 }
