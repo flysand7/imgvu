@@ -58,16 +58,13 @@ resize_window(t_window* window, u32 newClientWidth, u32 newClientHeight) {
 #include"windows/filesystem.c"
 #include"windows/directory.c"
 
-enum {GRAPHICS_GL, GRAPHICS_GDI} typedef t_graphics_provider;
-
 global bool g_running;
 global t_app_input g_app_input;
 global t_window g_window;
 global t_app_state g_app_state;
-global t_graphics_provider g_graphics_provider = GRAPHICS_GL;
 
 #include"windows/graphics.c"
-#include"windows/platform.c"
+#include"windows/api.c" // most of the API functions are here
 
 #define get_bit(num, bit) ( ((num) >> (bit)) & 1)
 internal LRESULT CALLBACK 
@@ -85,6 +82,10 @@ window_proc(HWND window, UINT msg, WPARAM wp, LPARAM lp) {
       if(wasPressed != isPressed) {
         if(keyCode == VK_LEFT) g_app_input.prevImage = isPressed;
         if(keyCode == VK_RIGHT) g_app_input.nextImage = isPressed;
+        if(keyCode == 'Q') g_app_input.rotateCW = isPressed;
+        if(keyCode == 'E') {g_app_input.rotateCCW = isPressed;}
+        if(keyCode == 'W') g_app_input.zoomIn = isPressed;
+        if(keyCode == 'S') g_app_input.zoomOut = isPressed;
         
         if(keyCode == VK_ESCAPE) g_running = false;
         if(keyCode == VK_F4) {
@@ -180,6 +181,7 @@ int main(void)
   }
   
   g_window.deviceContext = GetDC(g_window.handle);
+  win_create_gl_context();
   g_running = true;
   
   r32 dt = 0;

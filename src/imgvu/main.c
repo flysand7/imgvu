@@ -15,18 +15,30 @@ internal t_image app_decode_file(t_file_data data) {
 internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirState, t_app_input* input, r32 dt) {
   if(!appState->initialized) {
     app_load_config(&app_config, platform_get_config_filename());
-    platform_chose_graphics_provider(app_config.graphicsProvider);
-    platform_initialize_graphics_provider();
     
     appState->initialized = true;
     appState->dirState = dirState;
     
     //appState->imageLocation.angle = PI32/4.0f;
-    appState->imageLocation.scale = 3.0f;
+    appState->imageLocation.scale = 1.0f;
   }
   
   //appState->imageLocation.angle += 0.007f;
   debug_variable_unused(dt);
+  
+  if(input->zoomIn && !input->zoomOut) {
+    appState->imageLocation.scale += 0.1f;
+  }
+  if(input->zoomOut && !input->zoomIn) {
+    appState->imageLocation.scale -= 0.1f;
+  }
+  
+  if(input->rotateCCW && !input->rotateCW) {
+    appState->imageLocation.angle += PI32 / 8.0f;
+  }
+  if(input->rotateCW && !input->rotateCCW) {
+    appState->imageLocation.angle -= PI32 / 8.0f;
+  }
   
   if(input->prevImage && !input->nextImage) {
     platform_directory_previous_file(dirState);
@@ -47,6 +59,7 @@ internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirS
 }
 
 internal void app_draw(t_app_state* appState) {
+  platform_profile_state_push("draw");
   if(app_config.colorCycle.ptr) {
     u32 color = (u32)app_config.colorCycle.ptr[app_config.backgroundColor];
     platform_clear_screen(color);
@@ -60,4 +73,5 @@ internal void app_draw(t_app_state* appState) {
   }
   
   platform_show();
+  platform_profile_state_pop();
 }

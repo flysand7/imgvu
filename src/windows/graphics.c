@@ -126,6 +126,33 @@ internal void gdi_show(void) {
                 g_window.pixels, &bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
 }
 
+internal void win_create_gl_context(void) {
+  platform_profile_state_push("gl_init");
+  HGLRC glContext;
+  
+  PIXELFORMATDESCRIPTOR pixelFormat = {0};
+  pixelFormat.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+  pixelFormat.nVersion = 1;
+  pixelFormat.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+  pixelFormat.iPixelType = PFD_TYPE_RGBA;
+  pixelFormat.cColorBits = 32;
+  pixelFormat.cDepthBits = 24;
+  pixelFormat.cStencilBits = 8;
+  pixelFormat.cAuxBuffers = 0;
+  pixelFormat.iLayerType = PFD_MAIN_PLANE;
+  
+  int pixelFormatIndex = ChoosePixelFormat(g_window.deviceContext, &pixelFormat);
+  assert(pixelFormatIndex != 0); // TODO(bumbread): correct handling of this case, where pixel format wasn't found
+  SetPixelFormat(g_window.deviceContext, pixelFormatIndex, &pixelFormat);
+  
+  glContext = wglCreateContext(g_window.deviceContext);
+  assert(glContext != 0); // TODO(bumbread): correct handling
+  
+  wglMakeCurrent(g_window.deviceContext, glContext);
+  
+  platform_profile_state_pop();
+}
+
 internal void gl_clear_screen(u32 color) {
   u32 r = (color >> 0)  & 0xff;
   u32 g = (color >> 8)  & 0xff;

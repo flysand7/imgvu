@@ -35,3 +35,19 @@ wchar_t typedef char16;
 
 struct { u32 len; char16* ptr; } typedef t_string16;
 struct { u32 len; char* ptr; } typedef t_string;
+
+// used only by the config parsing function
+struct {
+  u32 len;
+  i64* ptr;
+} typedef t_array_i;
+
+struct {
+  u32 len;
+  r32* ptr;
+} typedef t_array_f;
+
+struct {
+  u32 len;
+  t_string* ptr;
+} typedef t_array_s;

@@ -1,23 +1,8 @@
-struct {
-  u32 len;
-  i64* ptr;
-} typedef t_array_i;
-
-struct {
-  u32 len;
-  r32* ptr;
-} typedef t_array_f;
-
-struct {
-  u32 len;
-  t_string* ptr;
-} typedef t_array_s;
 
 struct {
   bool error;
   t_array_i colorCycle;
   u32 backgroundColor;
-  t_string graphicsProvider;
 } typedef t_app_config;
 
 global t_app_config app_config;
@@ -49,7 +34,6 @@ internal void config_load_default(t_app_config* appConfig) {
   appConfig->colorCycle.ptr[0] = 0xff000000;
   appConfig->colorCycle.ptr[1] = 0xffffffff;
   appConfig->backgroundColor = 0;
-  appConfig->graphicsProvider = string_copy_mem(char_count("default"));
 }
 
 enum {
@@ -947,7 +931,6 @@ internal void app_load_config(t_app_config* appConfig, t_string16 filename) {
   
   t_link_list links = {0};
   link_create_ai(&links, char_count("color_cycle"), &appConfig->colorCycle);
-  link_create_s(&links, char_count("graphics_provider"), &appConfig->graphicsProvider);
   config_initialize_links(&symbols, &links);
   config_free_symbols(&symbols);
   

@@ -40,60 +40,19 @@ internal t_image* platform_get_current_image(t_directory_state* dirState) {
   return(0);
 }
 
-internal void platform_chose_graphics_provider(t_string provider) {
-  if(string_compare(provider, char_count("gl"))) {g_graphics_provider = GRAPHICS_GL;}
-  else if(string_compare(provider, char_count("gdi"))) {g_graphics_provider = GRAPHICS_GDI; }
-  else {g_graphics_provider = GRAPHICS_GL;}
-}
-
-internal void platform_initialize_graphics_provider(void) {
-  platform_profile_state_push("gl_init");
-  if(g_graphics_provider == GRAPHICS_GL) {
-    HGLRC glContext;
-    
-    PIXELFORMATDESCRIPTOR pixelFormat = {0};
-    pixelFormat.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-    pixelFormat.nVersion = 1;
-    pixelFormat.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-    pixelFormat.iPixelType = PFD_TYPE_RGBA;
-    pixelFormat.cColorBits = 32;
-    pixelFormat.cDepthBits = 24;
-    pixelFormat.cStencilBits = 8;
-    pixelFormat.cAuxBuffers = 0;
-    pixelFormat.iLayerType = PFD_MAIN_PLANE;
-    
-    int pixelFormatIndex = ChoosePixelFormat(g_window.deviceContext, &pixelFormat);
-    assert(pixelFormatIndex != 0); // TODO(bumbread): correct handling of this case, where pixel format wasn't found
-    SetPixelFormat(g_window.deviceContext, pixelFormatIndex, &pixelFormat);
-    
-    glContext = wglCreateContext(g_window.deviceContext);
-    assert(glContext != 0); // TODO(bumbread): correct handling
-    
-    wglMakeCurrent(g_window.deviceContext, glContext);
-    
-  }
-  platform_profile_state_pop();
-}
-
 internal void platform_clear_screen(u32 color) {
-  switch(g_graphics_provider) {
-    case(GRAPHICS_GDI): gdi_clear_screen(color); break;
-    case(GRAPHICS_GL): gl_clear_screen(color); break;
-  }
+  //gdi_clear_screen(color);
+  gl_clear_screen(color);
 }
 
 internal void platform_draw_image(t_location* loc, t_image* image) {
-  switch(g_graphics_provider) {
-    case(GRAPHICS_GDI): gdi_draw_image(loc, image); break;
-    case(GRAPHICS_GL): gl_draw_image(loc, image); break;
-  }
+  //gdi_draw_image(loc, image);
+  gl_draw_image(loc, image);
 }
 
 internal void platform_show(void) {
-  switch(g_graphics_provider) {
-    case(GRAPHICS_GDI): gdi_show(); break;
-    case(GRAPHICS_GL): gl_show(); break;
-  }
+  //gdi_show();
+  gl_show();
 }
 
 internal t_file_data platform_load_file(t_string16 fullFilename) {

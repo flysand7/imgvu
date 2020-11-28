@@ -2,10 +2,13 @@
 struct {
   bool prevImage;
   bool nextImage;
+  bool rotateCW;
+  bool rotateCCW;
+  bool zoomIn;
+  bool zoomOut;
 } typedef t_app_input;
 
 // NOTE(bumbread): The services platform layer provides to the app.
-
 struct {
   t_string16 filename;
   u64 size;
@@ -40,8 +43,6 @@ internal t_string16 platform_get_config_filename(void);
 
 // NOTE(bumbread): graphics subsystem
 internal t_image* platform_get_current_image(struct t_directory_state_s* dirState);
-internal void platform_chose_graphics_provider(t_string provider);
-internal void platform_initialize_graphics_provider(void);
 internal void platform_clear_screen(u32 color);
 internal void platform_draw_image(t_location* loc, t_image* image);
 internal void platform_show(void);
@@ -52,6 +53,7 @@ internal struct t_clock platform_clock(void);
 internal r64 platform_clock_diff(struct t_clock end, struct t_clock start);
 internal void platform_profile_state_push(char const *name);
 internal void platform_profile_state_pop(void);
+internal void platform_profile_pop_all(void);
 
 struct {
   bool initialized;
@@ -60,7 +62,6 @@ struct {
 } typedef t_app_state;
 
 // NOTE(bumbread): The services the app provides to the platform layer.
-
 internal bool app_update(t_app_state* appState, struct t_directory_state_s* state, t_app_input* input, r32 dt);
 internal void app_draw(t_app_state* state);
 internal t_image app_decode_file(t_file_data data);

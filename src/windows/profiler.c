@@ -64,3 +64,9 @@ internal void platform_profile_state_pop(void) {
   for(u32 _=0;_<profileStack.count;_+=1) {printf(" ");}
   printf("name: %s, seconds: %f, cycles: %lld\n", state.name, time, (i64)cycles);
 }
+
+internal void platform_profile_pop_all(void) {
+  while(profileStack.count > 0) {
+    platform_profile_state_pop();
+  }
+}
