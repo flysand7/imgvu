@@ -8,7 +8,7 @@ This is a small educational project which I had started for couple reasons.
 * I'm fucking tired of windows' image viewer showing black screen for several seconds on start and then turns out that you actually need to restart it, and then it loads faster, but still several seconds.
 
 ## general clarification
-* *fast* means that a user doesn't get noticeable delay when using the program. Note, that if you delete opengl32.dll from the program directory, the program will link against opengl32.dll found on your machine, which will use your videocard for rendering. But on some machines that driver
+* *fast* means that a user doesn't get noticeable delay when using the program. There is a particular bug that happens with opengl context loading, which doesn't allow my program to be loaded faster than in 1.5 seconds. Note that you may have that bug as well.
 * *reliable* means that if a certain kind of unexpected input is met, the program will be able to handle it smoothly. No crashes. No weird error messages. Sheesh, I'm not even going to _have_ unexpected inputs, I'm making error-free, bug-free program. All bugs get fixed right away. Note, that if you get a bug don't hesitate to report. Post a brief description of the bug and information that might be useful for reproducing/detecting the bug on GitHub issues.
 * *cross platform* means that this program is _ready to be ported_ to any other platform if someone writes a platform layer for that platform. I'm always ready to pull platform layer code from any repository (if it supports minimal functionality the program requires).
 
