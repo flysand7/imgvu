@@ -59,7 +59,6 @@ internal bool app_update(t_app_state* appState, struct t_directory_state_s* dirS
 }
 
 internal void app_draw(t_app_state* appState) {
-  platform_profile_state_push("draw");
   if(app_config.colorCycle.ptr) {
     u32 color = (u32)app_config.colorCycle.ptr[app_config.backgroundColor];
     platform_clear_screen(color);
@@ -73,5 +72,4 @@ internal void app_draw(t_app_state* appState) {
   }
   
   platform_show();
-  platform_profile_state_pop();
 }
